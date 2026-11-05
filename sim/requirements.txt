@@ -1,0 +1,6 @@
+# Python 3.10 only (PyBullet has no Windows wheels; compiled with MSVC Build Tools)
+pybullet==3.2.7
+gym-pybullet-drones @ git+https://github.com/learnsyslab/gym-pybullet-drones.git
+numpy
+pillow          # save camera frames
+websockets      # bridge to the TypeScript officer service
