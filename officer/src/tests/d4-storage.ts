@@ -16,7 +16,7 @@ if (treeErr !== null) throw new Error(`merkle tree: ${treeErr}`);
 console.log("root hash (local):", tree?.rootHash());
 
 const t0 = Date.now();
-const [tx, err] = await indexer.upload(data, env.zgRpc, signer);
+const [tx, err] = await indexer.upload(data, env.zgRpc, signer as any); // SDK types reference the CJS build of ethers
 if (err !== null) throw new Error(`upload: ${err}`);
 if (!("rootHash" in tx)) throw new Error("unexpected fragmented upload");
 console.log(`uploaded in ${Date.now() - t0} ms, tx ${tx.txHash}, root ${tx.rootHash}`);

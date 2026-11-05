@@ -1,0 +1,17 @@
+{
+  "v": 1,
+  "note": "Signed flight permit (NPNT-style). Local metres; the sim world is a 1:50 scale city block.",
+  "airframeId": "SKY-001",
+  "validFrom": 0,
+  "validTo": 4102444800,
+  "geofence": [[-0.5, -0.5], [4.5, -0.5], [4.5, 4.5], [-0.5, 4.5]],
+  "noFly": [
+    { "name": "AIRPORT", "polygon": [[1.4, 1.4], [2.6, 1.4], [2.6, 2.6], [1.4, 2.6]] }
+  ],
+  "altCeilingM": 1.6,
+  "maxWindMs": 9.0,
+  "minBatteryReserve": 0.15,
+  "dropZones": { "DZ-1": [3.5, 3.5] },
+  "rallyPoints": { "HOME": [0.0, 0.0], "R2": [3.5, 0.3] },
+  "visionModel": "qwen3.8-flash"
+}
