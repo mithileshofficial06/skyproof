@@ -12,8 +12,8 @@ Tick boxes as you go. Each phase ends with an **exit check**; don't start the ne
 - [x] Python 3.12 venv in `sim/.venv`, PyBullet compiled, gym-pybullet-drones installed
 - [x] **D3 PASS**: simulated flight (4 cm error) + 320×240 camera frame
 - [ ] Credentials from teammate
-- [ ] CRE CLI, MetaMask installed on the main laptop
-- [ ] Decision: Hardhat (recommended) or Foundry for 0G contracts
+- [x] CRE CLI v1.39 (logged in), MetaMask installed on the main laptop
+- [x] Decision: Hardhat for 0G contracts
 
 ---
 
@@ -38,11 +38,11 @@ Scripts go in `scripts/`. If a test fails, use its fallback and note it here.
 
 | # | Test | Pass | Fallback | Status |
 |---|---|---|---|---|
-| D1 | One image + JSON prompt to the 0G vision model (Private Computer) | JSON verdict + request ID + verification data | Send structured "people in zone" data to a text model | [ ] |
-| D2 | 10 timed 0G calls | p95 ≲ 5 s | Longer hover wait; smaller model | [ ] |
+| D1 | One image + JSON prompt to the 0G vision model (Private Computer) | JSON verdict + request ID + verification data | Send structured "people in zone" data to a text model | [x] `qwen3.8-flash`, HTTP 200, JSON verdict, `x_0g_trace.request_id` + provider address |
+| D2 | 10 timed 0G calls | p95 ≲ 5 s | Longer hover wait; smaller model | [x] 1.4–2.1 s with `enable_thinking:false` (5–47 s with thinking on) |
 | D3 | PyBullet flight + camera frame | Flies, frame saved | n/a | [x] |
 | D4 | 0G Storage upload + download | Same bytes + root hash | Retry / keep local copy | [ ] |
-| D5 | Deploy a tiny contract to 0G Galileo (16602) | Address | Other tool (Hardhat ↔ Foundry) | [ ] |
+| D5 | Deploy a tiny contract to 0G Galileo (16602) | Address | Other tool (Hardhat ↔ Foundry) | [x] Ping at `0x06f915c6552D8f5eeFd9e16a62c89Fc1Dccc5709` (Hardhat) |
 | D6 | USDC escrow in Arc Studio | Shareable link + working deposit | Arc booth help | [ ] |
 | D7 | `cre workflow simulate` calling Open-Meteo | Simulation succeeds | CRE template | [ ] |
 | D8 | CRE writes to an Arc testnet contract | Value changes on Arc | Calldata `settle()` with an on-chain signature check | [ ] |

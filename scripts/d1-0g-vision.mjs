@@ -30,6 +30,8 @@ async function once() {
     body: JSON.stringify({
       model,
       temperature: 0,
+      max_tokens: 80,
+      enable_thinking: false, // thinking adds 5-45 s; off gives ~1.5-2 s
       messages: [
         { role: "system", content: system },
         {
@@ -62,7 +64,7 @@ for (let i = 0; i < runs; i++) {
     console.log("response id:", body.id);
     console.log("model:", body.model);
     console.log("0G/verification headers:", Object.fromEntries(zgHeaders));
-    console.log("extra body fields:", Object.keys(body).filter((k) => !["id", "object", "created", "model", "choices", "usage"].includes(k)));
+    console.log("0G trace (request id, provider):", JSON.stringify(body.x_0g_trace));
     console.log("answer:", body.choices?.[0]?.message?.content);
   }
 }
