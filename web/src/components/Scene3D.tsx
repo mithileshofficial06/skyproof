@@ -58,7 +58,104 @@ const bounds = (poly: XY[]) => {
 };
 const rand = (seed: number) => () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
 
+// Facade texture (drawn once): rows of windows, some lit.
+function useFacade() {
+  return useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const c = document.createElement("canvas");
+    c.width = 64;
+    c.height = 128;
+    const x = c.getContext("2d")!;
+    x.fillStyle = "#ffffff";
+    x.fillRect(0, 0, 64, 128);
+    const r = rand(7);
+    for (let row = 0; row < 8; row++)
+      for (let col = 0; col < 4; col++) {
+        const lit = r() < 0.18;
+        x.fillStyle = lit ? "#f3d9a4" : r() < 0.5 ? "#6d7a86" : "#7f8c97";
+        x.fillRect(5 + col * 15, 6 + row * 15, 10, 9);
+      }
+    x.fillStyle = "rgba(0,0,0,0.08)";
+    for (let row = 0; row < 8; row++) x.fillRect(0, 17 + row * 15, 64, 2);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    return t;
+  }, []);
+}
+
+function Building({ b, facade }: { b: { x: number; y: number; w: number; d: number; h: number; c: string }; facade: THREE.Texture | null }) {
+  const mats = useMemo(() => {
+    const side = (len: number) => {
+      const t = facade?.clone() ?? null;
+      if (t) {
+        t.needsUpdate = true;
+        t.repeat.set(Math.max(1, Math.round(len * 5)), Math.max(1, Math.round(b.h * 3.2)));
+      }
+      return new THREE.MeshStandardMaterial({ color: b.c, map: t, roughness: 0.75 });
+    };
+    const roof = new THREE.MeshStandardMaterial({ color: "#7b7f86", roughness: 0.9 });
+    return [side(b.d), side(b.d), roof, roof, side(b.w), side(b.w)];
+  }, [b, facade]);
+  return (
+    <group position={v(b.x, b.y, 0)}>
+      <mesh position={[0, b.h / 2, 0]} castShadow receiveShadow material={mats}>
+        <boxGeometry args={[b.w, b.h, b.d]} />
+      </mesh>
+      <mesh position={[b.w * 0.18, b.h + 0.03, -b.d * 0.15]} castShadow>
+        <boxGeometry args={[b.w * 0.25, 0.06, b.d * 0.25]} />
+        <meshStandardMaterial color="#9ca3af" />
+      </mesh>
+    </group>
+  );
+}
+
+const CAR_COLORS = ["#b91c1c", "#1d4ed8", "#f5f5f4", "#111827", "#ca8a04", "#0f766e", "#6b7280", "#7c2d12"];
+function Traffic({ g }: { g: { x0: number; x1: number; y0: number; y1: number } }) {
+  const ref = useRef<THREE.Group>(null);
+  const loop = useMemo(() => {
+    const a = { x0: g.x0 - 0.4, x1: g.x1 + 0.4, y0: g.y0 - 0.4, y1: g.y1 + 0.4 };
+    const w = a.x1 - a.x0;
+    const h = a.y1 - a.y0;
+    return { a, w, h, per: 2 * (w + h) };
+  }, [g.x0, g.x1, g.y0, g.y1]);
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const { a, w, h, per } = loop;
+    ref.current.children.forEach((car, i) => {
+      const lane = i % 2 ? 0.09 : -0.09;
+      const dir = i % 2 ? -1 : 1;
+      let d = (((clock.elapsedTime * 0.35 * dir + (i * per) / 10) % per) + per) % per;
+      let x: number, y: number, rot: number;
+      if (d < w) [x, y, rot] = [a.x0 + d, a.y0 + lane, 0];
+      else if ((d -= w) < h) [x, y, rot] = [a.x1 - lane, a.y0 + d, Math.PI / 2];
+      else if ((d -= h) < w) [x, y, rot] = [a.x1 - d, a.y1 - lane, Math.PI];
+      else [x, y, rot] = [a.x0 + lane, a.y1 - (d - w), -Math.PI / 2];
+      car.position.set(...v(x, y, 0));
+      car.rotation.y = rot + (dir < 0 ? Math.PI : 0);
+    });
+  });
+  return (
+    <group ref={ref}>
+      {Array.from({ length: 10 }).map((_, i) => (
+        <group key={i}>
+          <mesh position={[0, 0.03, 0]} castShadow>
+            <boxGeometry args={[0.16, 0.04, 0.075]} />
+            <meshStandardMaterial color={CAR_COLORS[i % CAR_COLORS.length]} metalness={0.4} roughness={0.35} />
+          </mesh>
+          <mesh position={[-0.01, 0.062, 0]} castShadow>
+            <boxGeometry args={[0.08, 0.03, 0.065]} />
+            <meshStandardMaterial color="#1f2937" metalness={0.6} roughness={0.2} />
+          </mesh>
+        </group>
+      ))}
+    </group>
+  );
+}
+
 function City({ permit }: { permit: Permit }) {
+  const facade = useFacade();
   const g = bounds(permit.geofence);
   const { blocks, trees } = useMemo(() => {
     const r = rand(42);
@@ -72,12 +169,12 @@ function City({ permit }: { permit: Permit }) {
           blocks.push({ x: x + (r() - 0.5) * 0.45, y: y + (r() - 0.5) * 0.45, w: 0.28 + r() * 0.3, d: 0.28 + r() * 0.3, h: 0.25 + r() * 1.5, c: palette[Math.floor(r() * palette.length)] });
       }
     const trees: XY[] = [];
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < 110; i++) {
       const p: XY = [g.x0 + r() * (g.x1 - g.x0), g.y0 + r() * (g.y1 - g.y0)];
       const near = (q: XY, d: number) => Math.hypot(p[0] - q[0], p[1] - q[1]) < d;
       if (permit.noFly.some((z) => inPoly(p, z.polygon))) continue;
       if (Object.values(permit.dropZones).some((q) => near(q, 0.7)) || Object.values(permit.rallyPoints).some((q) => near(q, 0.5))) continue;
-      if (Math.abs(p[1] - 0.15) < 0.45 || Math.abs(p[0] - 3.5) < 0.45 || Math.abs(p[1] - 3.0) < 0.35) continue;
+      if (Math.abs(p[1] - 0.15) < 0.45 || Math.abs(p[0] - 3.5) < 0.45 || Math.abs(p[1] - 3.0) < 0.35 || near([0.65, 1.75], 0.45)) continue;
       trees.push(p);
     }
     return { blocks, trees };
@@ -116,29 +213,83 @@ function City({ permit }: { permit: Permit }) {
         {`PERMITTED AREA · CEILING ${permit.altCeilingM} M`}
       </Text>
       {blocks.map((b, i) => (
-        <group key={i} position={v(b.x, b.y, 0)}>
-          <mesh position={[0, b.h / 2, 0]} castShadow receiveShadow>
-            <boxGeometry args={[b.w, b.h, b.d]} />
-            <meshStandardMaterial color={b.c} roughness={0.85} />
-          </mesh>
-          <mesh position={[0, b.h + 0.005, 0]}>
-            <boxGeometry args={[b.w * 0.92, 0.01, b.d * 0.92]} />
-            <meshStandardMaterial color="#6b6f76" />
-          </mesh>
-        </group>
+        <Building key={i} b={b} facade={facade} />
       ))}
-      {trees.map((p, i) => (
-        <group key={i} position={v(p[0], p[1], 0)}>
-          <mesh position={[0, 0.05, 0]} castShadow>
-            <cylinderGeometry args={[0.012, 0.016, 0.1, 6]} />
-            <meshStandardMaterial color="#6b4f35" />
+      {/* sidewalk kerb around the park */}
+      <mesh rotation-x={-Math.PI / 2} position={v(cx, cy, 0.0035)}>
+        <planeGeometry args={[g.x1 - g.x0 + 0.16, g.y1 - g.y0 + 0.16]} />
+        <meshStandardMaterial color="#d8d2c5" />
+      </mesh>
+      {/* street lamps */}
+      {Array.from({ length: 24 }).map((_, i) => {
+        const side = i % 4;
+        const k = Math.floor(i / 4) / 5;
+        const [x, y] = side === 0 ? [g.x0 + k * (g.x1 - g.x0), g.y0 - 0.1] : side === 1 ? [g.x1 + 0.1, g.y0 + k * (g.y1 - g.y0)] : side === 2 ? [g.x1 - k * (g.x1 - g.x0), g.y1 + 0.1] : [g.x0 - 0.1, g.y1 - k * (g.y1 - g.y0)];
+        return (
+          <group key={i} position={v(x, y, 0)}>
+            <mesh position={[0, 0.11, 0]} castShadow>
+              <cylinderGeometry args={[0.005, 0.007, 0.22, 6]} />
+              <meshStandardMaterial color="#3f4248" />
+            </mesh>
+            <mesh position={[0, 0.225, 0]}>
+              <boxGeometry args={[0.035, 0.012, 0.02]} />
+              <meshStandardMaterial color="#2b2e33" />
+            </mesh>
+          </group>
+        );
+      })}
+      <Traffic g={g} />
+      {/* pond + paths in the park */}
+      <mesh rotation-x={-Math.PI / 2} position={v(0.65, 1.75, 0.006)}>
+        <circleGeometry args={[0.32, 40]} />
+        <meshStandardMaterial color="#5b8fa8" roughness={0.15} metalness={0.2} />
+      </mesh>
+      <mesh rotation-x={-Math.PI / 2} position={v(0.65, 1.75, 0.0055)}>
+        <circleGeometry args={[0.36, 40]} />
+        <meshStandardMaterial color="#cdbf9f" />
+      </mesh>
+      {[
+        [[0.0, 0.25], [0.65, 1.4]],
+        [[0.65, 2.1], [0.6, 2.7]],
+        [[3.5, 0.6], [3.45, 2.85]],
+      ].map(([a, b], i) => {
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        return (
+          <mesh key={i} rotation-x={-Math.PI / 2} rotation-z={Math.atan2(b[1] - a[1], b[0] - a[0])} position={v((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 0.005)}>
+            <planeGeometry args={[len, 0.07]} />
+            <meshStandardMaterial color="#d6cbb0" />
           </mesh>
-          <mesh position={[0, 0.16, 0]} castShadow>
-            <coneGeometry args={[0.07 + (i % 3) * 0.015, 0.2, 8]} />
-            <meshStandardMaterial color={i % 2 ? "#4f7a3a" : "#5c8a44"} roughness={1} />
-          </mesh>
-        </group>
-      ))}
+        );
+      })}
+      {trees.map((p, i) =>
+        i % 3 === 0 ? (
+          <group key={i} position={v(p[0], p[1], 0)}>
+            <mesh position={[0, 0.05, 0]} castShadow>
+              <cylinderGeometry args={[0.012, 0.016, 0.1, 6]} />
+              <meshStandardMaterial color="#6b4f35" />
+            </mesh>
+            <mesh position={[0, 0.16, 0]} castShadow>
+              <coneGeometry args={[0.075, 0.22, 8]} />
+              <meshStandardMaterial color="#3f6b35" roughness={1} />
+            </mesh>
+          </group>
+        ) : (
+          <group key={i} position={v(p[0], p[1], 0)} scale={0.8 + (i % 4) * 0.12}>
+            <mesh position={[0, 0.06, 0]} castShadow>
+              <cylinderGeometry args={[0.01, 0.015, 0.12, 6]} />
+              <meshStandardMaterial color="#6b4f35" />
+            </mesh>
+            <mesh position={[0, 0.16, 0]} castShadow>
+              <icosahedronGeometry args={[0.085, 1]} />
+              <meshStandardMaterial color={["#5d8b45", "#6e9a4f", "#4f7d3c"][i % 3]} roughness={1} flatShading />
+            </mesh>
+            <mesh position={[0.04, 0.2, 0.02]} castShadow>
+              <icosahedronGeometry args={[0.055, 1]} />
+              <meshStandardMaterial color={["#6e9a4f", "#5d8b45", "#78a65a"][i % 3]} roughness={1} flatShading />
+            </mesh>
+          </group>
+        ),
+      )}
     </group>
   );
 }
@@ -329,18 +480,40 @@ type Shared = MutableRefObject<{ pos: THREE.Vector3; heading: number }>;
 
 function Drone({ drone, fx, shared }: { drone: DroneView; fx: SceneFx; shared: Shared }) {
   const { scene } = useGLTF("/models/drone.glb");
-  const { model, fit } = useMemo(() => {
+  // The rotor meshes are authored around the model origin, so re-centre each one on its own hub
+  // (fresh geometry copy) so it spins in place instead of orbiting the body.
+  const { model, fit, rotors, discs } = useMemo(() => {
     const m = scene.clone(true);
+    const rotors: THREE.Mesh[] = [];
+    const discs: THREE.Mesh[] = [];
     m.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).castShadow = true;
+      const mesh = o as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      mesh.castShadow = true;
+      if (!/^Rotor_/.test(mesh.name)) return;
+      mesh.geometry = mesh.geometry.clone();
+      mesh.geometry.computeBoundingBox();
+      const bb = mesh.geometry.boundingBox!;
+      const c = bb.getCenter(new THREE.Vector3());
+      const r = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z) / 2;
+      mesh.geometry.translate(-c.x, -c.y, -c.z);
+      mesh.position.copy(c);
+      rotors.push(mesh);
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 32), new THREE.MeshBasicMaterial({ color: "#2f3338", transparent: true, opacity: 0.0, depthWrite: false, side: THREE.DoubleSide }));
+      disc.rotation.x = -Math.PI / 2;
+      disc.position.copy(c);
+      m.add(disc);
+      discs.push(disc);
     });
     const box = new THREE.Box3().setFromObject(m);
     const size = box.getSize(new THREE.Vector3());
-    const c = box.getCenter(new THREE.Vector3());
-    m.position.set(-c.x, -c.y, -c.z);
-    return { model: m, fit: 0.42 / Math.max(size.x, size.z, 1e-6) };
+    const ctr = box.getCenter(new THREE.Vector3());
+    const holder = new THREE.Group();
+    m.position.set(-ctr.x, -ctr.y, -ctr.z);
+    holder.add(m);
+    return { model: holder, fit: 0.42 / Math.max(size.x, size.z, 1e-6), rotors, discs };
   }, [scene]);
-  const rotors = useMemo(() => ["Rotor_FL", "Rotor_FR", "Rotor_BL", "Rotor_BR"].map((n) => model.getObjectByName(n)).filter(Boolean) as THREE.Object3D[], [model]);
+  const spin = useRef(0);
   const g = useRef<THREE.Group>(null);
   const body = useRef<THREE.Group>(null);
   const shadow = useRef<THREE.Mesh>(null);
@@ -353,10 +526,16 @@ function Drone({ drone, fx, shared }: { drone: DroneView; fx: SceneFx; shared: S
     const [vx, vy] = drone.vel;
     const speed = Math.hypot(vx, vy);
     if (speed > 0.06) shared.current.heading = Math.atan2(vy, vx);
-    g.current.rotation.y = THREE.MathUtils.lerp(g.current.rotation.y, shared.current.heading, Math.min(1, dt * 4));
-    body.current.rotation.z = THREE.MathUtils.lerp(body.current.rotation.z, -Math.min(0.3, speed * 0.35), Math.min(1, dt * 4));
+    // turn the shortest way round, bank into turns, pitch with speed
+    let dh = shared.current.heading - g.current.rotation.y;
+    dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+    g.current.rotation.y += dh * Math.min(1, dt * 3);
+    body.current.rotation.z = THREE.MathUtils.lerp(body.current.rotation.z, -Math.min(0.28, speed * 0.32), Math.min(1, dt * 3));
+    body.current.rotation.x = THREE.MathUtils.lerp(body.current.rotation.x, THREE.MathUtils.clamp(dh * 0.6, -0.25, 0.25), Math.min(1, dt * 3));
     const air = drone.alt > 0.08;
-    for (const r of rotors) r.rotation.y += dt * (air ? 70 : 3);
+    spin.current = THREE.MathUtils.lerp(spin.current, air ? 1 : 0.08, Math.min(1, dt * 1.5));
+    for (const r of rotors) r.rotation.y += dt * 75 * spin.current;
+    for (const d of discs) (d.material as THREE.MeshBasicMaterial).opacity = Math.max(0, spin.current - 0.35) * 0.3;
     body.current.position.y = air ? Math.sin(state.clock.elapsedTime * 3) * 0.004 : 0;
     shared.current.pos.copy(g.current.position);
     if (shadow.current) {
