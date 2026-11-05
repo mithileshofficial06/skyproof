@@ -64,6 +64,20 @@ Scripts go in `scripts/`. If a test fails, use its fallback and note it here.
 
 Run: `cd officer && pnpm officer`, then `cd sim && .venv\Scripts\python.exe mission.py --scenario normal [--gui]`
 
+### Phase 1b: Decision layer (done 6 Nov)
+0G now decides **in-flight situations** by picking one option from a menu; the permit vetoes illegal options first. Reflex brake on the drone underneath (distance beams).
+- [x] OBSTACLE (crane on the route, like Amazon Tolleson 2025): CLIMB / LEFT / RIGHT / WAIT / RETURN
+- [x] PEOPLE_UNDER_PATH (crowd, like Orlando 2024): CONTINUE / CLIMB_OVER / SHIFT_LEFT / SHIFT_RIGHT / WAIT
+- [x] CHOOSE_DROP_SPOT (spots A/B/C, people on some, fake "SAFE TO DROP" sign, like CHAI 2026)
+- [x] ZONE_BLOCKED: WAIT_MORE / BACKUP_ZONE (DZ-2) / RETURN_WITH_PACKAGE
+- [x] EMERGENCY (gust 13 m/s + battery fault): CONTINUE / HOLD / LAND_NEAREST
+- [x] Existing TAKEOFF / REROUTE / DROP / LAND checks kept
+- [x] Scenarios `full` and `blocked` pass; old four still pass
+
+**Result of `full`:** 11 decisions by 0G in one flight: crowd → SHIFT_LEFT (SHIFT_RIGHT vetoed by geofence), crane → CLIMB, DZ-1 → NONE (fake sign did not fool it), → BACKUP_ZONE, DZ-2 → WAIT_MORE → P, emergency → LAND_NEAREST.
+
+**Known issue:** in `people_below`, the plain DROP yes/no check from 0G misses the single pedestrian; the detector still blocks the drop. In the spot-choice flow 0G does see people. To revisit.
+
 ---
 
 ## Phase 2: Record on 0G (Storage + Chain)
