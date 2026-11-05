@@ -41,7 +41,7 @@ Scripts go in `scripts/`. If a test fails, use its fallback and note it here.
 | D1 | One image + JSON prompt to the 0G vision model (Private Computer) | JSON verdict + request ID + verification data | Send structured "people in zone" data to a text model | [x] `qwen3.8-flash`, HTTP 200, JSON verdict, `x_0g_trace.request_id` + provider address |
 | D2 | 10 timed 0G calls | p95 ≲ 5 s | Longer hover wait; smaller model | [x] 1.4–2.1 s with `enable_thinking:false` (5–47 s with thinking on) |
 | D3 | PyBullet flight + camera frame | Flies, frame saved | n/a | [x] |
-| D4 | 0G Storage upload + download | Same bytes + root hash | Retry / keep local copy | [ ] |
+| D4 | 0G Storage upload + download | Same bytes + root hash | Retry / keep local copy | [x] stored on 4 nodes, downloaded with proof, identical |
 | D5 | Deploy a tiny contract to 0G Galileo (16602) | Address | Other tool (Hardhat ↔ Foundry) | [x] Ping at `0x06f915c6552D8f5eeFd9e16a62c89Fc1Dccc5709` (Hardhat) |
 | D6 | USDC escrow in Arc Studio | Shareable link + working deposit | Arc booth help | [ ] |
 | D7 | `cre workflow simulate` calling Open-Meteo | Simulation succeeds | CRE template | [ ] |
@@ -51,14 +51,18 @@ Scripts go in `scripts/`. If a test fails, use its fallback and note it here.
 
 ## Phase 1: Core loop (sim + gate + 0G decision)
 **Owner A (sim), B (officer)**
-- [ ] `sim/world.py`: city block, permit geofence, no-fly polygon (airport), 2 drop zones, rally points, pedestrians that can be moved into a drop zone, seeded wind gusts
-- [ ] `sim/bridge.py`: WebSocket server; sends state + camera frame, receives approved commands
-- [ ] `sim/gate.py`: runs `TAKEOFF / REROUTE / DROP / LAND` only with a valid ALLOW (nonce, 10 s freshness, request hash); autopilot stays local
-- [ ] `officer/` (TS): schema check → permit + hard rules (geofence, no-fly, altitude, battery, wind) → person check (sim ground truth) → **0G vision call** → combine → ALLOW/DENY with request ID
-- [ ] Safe stop: 0G timeout → hold, retry 30 s → rally point → land; log `SAFE_STOP_LOCAL` "no 0G decision claimed"
-- [ ] Console stub prints the decision feed
+- [x] `sim/skyproof_sim/world.py`: city block, permit geofence, no-fly polygon (airport), 2 drop zones, rally points, pedestrians that can be moved into a drop zone, seeded wind gusts
+- [x] `sim/skyproof_sim/link.py`: WebSocket link; sends state + camera frame, receives decisions
+- [x] `sim/skyproof_sim/gate.py`: runs `TAKEOFF / REROUTE / DROP / LAND` only with a valid ALLOW (nonce, 10 s freshness, request hash); autopilot stays local
+- [x] `officer/` (TS): schema check → permit + hard rules (geofence, no-fly, altitude, battery, wind) → person check (sim ground truth) → **0G vision call** → combine → ALLOW/DENY with request ID
+- [x] Safe stop: 0G timeout → hold, retry 30 s → rally point → land; log `SAFE_STOP_LOCAL` "no 0G decision claimed"
+- [x] Decision feed printed by sim and officer (web console in Phase 4)
 
 **Exit check:** a full mission runs where every drop and landing waits for a 0G decision; a pedestrian in the zone gives DENY `PEOPLE_BELOW`; killing the network triggers the safe stop.
+
+**Result (6 Nov):** ✅ `normal` (7/7 decisions by 0G), ✅ `network_down` (safe stop at R2, "no 0G decision claimed"), ✅ `geofence_breach` (actions recorded without approvals), ⚠️ `people_below`: drone refused the drop, but in the mission run the *detector* caught the person, not 0G (0G did catch it in `vision_probe.py`). Re-test with the sharper DROP prompt once the network is stable.
+
+Run: `cd officer && pnpm officer`, then `cd sim && .venv\Scripts\python.exe mission.py --scenario normal [--gui]`
 
 ---
 
