@@ -32,10 +32,13 @@ export class ZgUnreachable extends Error {}
 export async function zgDecide(cmd: Cmd, state: DroneState, frameB64: string | undefined, netDown: boolean, timeoutMs = 8000): Promise<ZgDecision> {
   if (netDown) throw new ZgUnreachable("link to 0G is down");
   const key = need("ZG_PC_API_KEY");
-  const content: unknown[] = [
-    { type: "text", text: `Command: ${JSON.stringify(cmd)}. Drone state: ${JSON.stringify(state)}. ${cmd.type === "DROP" || cmd.type === "LAND" ? "Look carefully: is there any person in or near the target zone in this image? If yes, DENY with PEOPLE_BELOW." : "Approve?"}` },
-  ];
-  if (frameB64) content.push({ type: "image_url", image_url: { url: `data:image/png;base64,${frameB64}` } });
+  const ground = cmd.type === "DROP" || cmd.type === "LAND";
+  const question = ground
+    ? `Is there any person (a figure with a head, shirt and trousers) anywhere in this image? If yes, DENY with PEOPLE_BELOW. Command: ${JSON.stringify(cmd)}. Drone state: ${JSON.stringify(state)}.`
+    : `Command: ${JSON.stringify(cmd)}. Drone state: ${JSON.stringify(state)}. Approve?`;
+  const content: unknown[] = [];
+  if (frameB64) content.push({ type: "image_url", image_url: { url: `data:image/png;base64,${frameB64}` } }); // image first
+  content.push({ type: "text", text: question });
 
   const t0 = performance.now();
   let res: Response;

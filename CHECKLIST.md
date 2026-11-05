@@ -33,9 +33,9 @@
 | D3 | Simulated drone flies + camera | `cd sim` then `.venv\Scripts\python.exe d3_flight_test.py` | ✅ |
 | D4 | Save + load on 0G Storage | `cd officer` then `pnpm d4` | ✅ |
 | D5 | Deploy a contract on 0G Chain | `cd contracts` then `pnpm d5` | ✅ |
-| D6 | USDC escrow in Arc Studio | in Arc Studio (needs 0.13) | ⬜ 👤 |
-| D7 | Chainlink workflow simulation with a weather API | `cre init` + `cre workflow simulate` | ⬜ (template download failed on bad network) |
-| D8 | Chainlink writes to an Arc contract | needs D6 + D7 | ⬜ |
+| D6 | USDC escrow in Arc Studio | in Arc Studio (needs 0.13) | ✅ |
+| D7 | Chainlink workflow simulation with a weather API | `cre init` + `cre workflow simulate` | ✅ |
+| D8 | Chainlink writes to an Arc contract | needs D6 + D7 | ✅ |
 
 ---
 
@@ -82,16 +82,16 @@
 ## Stage 4: Money + judge (Phase 3)
 | # | Step | Status |
 |---|---|---|
-| 4.1 | 👤 Arc Studio: create `SkyProofEscrow` (bond deposit, bond lock, claim + deposit, 2-min claim window, payout cap) | ⬜ |
-| 4.2 | `onReport` callable only by the Chainlink CRE forwarder | ⬜ |
-| 4.3 | Deploy on Arc testnet; put the address + Studio link in `.env` and README | ⬜ |
-| 4.4 | CRE project in `cre/` (retry `cre init` on a stable network) | ⬜ |
-| 4.5 | Workflow: trigger on claim window closed → read 0G anchors → fetch + decrypt records → check chain + signatures + permit | ⬜ |
-| 4.6 | Workflow: fetch weather from Open-Meteo | ⬜ |
-| 4.7 | Workflow: rules B1 GEOFENCE, B2 ALTITUDE, B3 UNAPPROVED_ACTION, B4 OVERRIDE_ON_DENY, B5 RECORD_BROKEN, B6 UNSAFE_WIND_LAUNCH | ⬜ |
-| 4.8 | Workflow writes the verdict to Arc → payout or hold | ⬜ |
-| 4.9 | Test: `geofence_breach` flight → BREACH → victim paid in USDC | ⬜ |
-| 4.10 | Test: `normal` flight → REVIEW → money held | ⬜ |
+| 4.1 | 👤 Arc Studio: create `SkyProofEscrow` (bond deposit, bond lock, claim + deposit, 2-min claim window, payout cap) | ✅ `0x10daa2…4644d8` (time-locked withdrawal redeploy pending in Arc Studio) |
+| 4.2 | `onReport` callable only by the Chainlink CRE forwarder | ✅ |
+| 4.3 | Deploy on Arc testnet; put the address + Studio link in `.env` and README | ✅ + `pnpm arc-setup` (cap 5, operator bound first, bond 10) |
+| 4.4 | CRE project in `cre/` (retry `cre init` on a stable network) | ✅ `cre/judge` from the official event-reactor template |
+| 4.5 | Workflow: trigger on claim window closed → read 0G anchors → fetch + decrypt records → check chain + signatures + permit | ✅ |
+| 4.6 | Workflow: fetch weather from Open-Meteo | ✅ |
+| 4.7 | Workflow: rules B1 GEOFENCE, B2 ALTITUDE, B3 UNAPPROVED_ACTION, B4 OVERRIDE_ON_DENY, B5 RECORD_BROKEN, B6 UNSAFE_WIND_LAUNCH | ✅ |
+| 4.8 | Workflow writes the verdict to Arc → payout or hold | ✅ |
+| 4.9 | Test: `geofence_breach` flight → BREACH → victim paid in USDC | ✅ claim #1 Paid: 5 USDC + deposit |
+| 4.10 | Test: `normal` flight → REVIEW → money held | ✅ claim #2 Held |
 
 ---
 

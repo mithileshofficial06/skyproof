@@ -54,3 +54,21 @@ cd sim; .venv\Scripts\python.exe mission.py --scenario full [--gui]
 cd officer; pnpm replay <flight-id> [--tamper | --delete]
 ```
 Scenarios: `normal`, `people_below`, `network_down`, `geofence_breach`, `full`, `blocked`.
+
+## Arc + Chainlink (Stage 4)
+| Piece | Where |
+|---|---|
+| SkyProofEscrow (built in Arc Studio), Arc Testnet | `0x10daa2dbded35f0056be1dbdbee908a12e4644d8` · [Arc Studio project](https://studio.arc.io/share/sky-proof-escrow-contract-tzqdmj9nlm) · source in `contracts/arc/` |
+| Chainlink CRE judge | `cre/judge/verdict/workflow.ts` (trigger: `ClaimWindowClosed` on Arc) |
+
+The judge finds the flight on 0G Chain, checks the released record against the 0G Chain anchors (it does not trust the evidence host), cross-checks Open-Meteo weather, applies rules B1-B6 and writes the verdict to the escrow. Only the CRE forwarder can call `onReport`.
+
+**Proven on testnet (6 Nov 2026):** cheating flight → claim #1 → BREACH → victim paid 5 USDC + deposit (verdict tx `0xc996a439b0b1e7d0ebc7667992f3747863411c274218651d5932564eae675789`); honest flight → claim #2 → REVIEW → funds held (tx `0xff9b97e456202c12b31f46f3fad6d093c677acab31bdb6bd4935626012a66cee`).
+
+```powershell
+cd officer; pnpm arc-setup                 # register drone, bind operator, lock bond (once)
+cd officer; pnpm evidence                  # operator's evidence endpoint (keep running)
+cd officer; pnpm claim <flight-id>         # victim files + closes a claim (prints the CRE command)
+cd cre\judge; cre workflow simulate verdict --non-interactive --trigger-index 0 --evm-tx-hash <closeTx> --evm-event-index 0 --broadcast -T staging-settings
+```
+`cre/judge/.env` holds `CRE_ETH_PRIVATE_KEY` (git-ignored). On Windows put the real `bun.exe` on PATH for the WASM build.

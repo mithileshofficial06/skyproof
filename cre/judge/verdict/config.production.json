@@ -1,0 +1,9 @@
+{
+  "arcChain": "arc-testnet",
+  "escrow": "0x10daa2dbded35f0056be1dbdbee908a12e4644d8",
+  "zgRpc": "https://evmrpc-testnet.0g.ai",
+  "flightLog": "0x2E6F0f6f3121e3aA7984ffC292f80E75c937cBa5",
+  "evidenceUrl": "http://localhost:8788",
+  "weatherUrl": "https://api.open-meteo.com/v1/forecast?latitude=19.076&longitude=72.8777&current=wind_speed_10m&wind_speed_unit=ms",
+  "gasLimit": "600000"
+}

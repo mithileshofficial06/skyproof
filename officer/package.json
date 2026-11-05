@@ -7,7 +7,10 @@
     "officer": "tsx src/server.ts",
     "test": "tsx --test src/**/*.test.ts",
     "setup-chain": "tsx src/setup-chain.ts",
-    "replay": "tsx src/replay.ts"
+    "replay": "tsx src/replay.ts",
+    "arc-setup": "tsx src/arc-setup.ts",
+    "claim": "tsx src/claim.ts",
+    "evidence": "tsx src/evidence.ts"
   },
   "dependencies": {
     "@0gfoundation/0g-storage-ts-sdk": "^1.2.13",

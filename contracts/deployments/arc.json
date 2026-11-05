@@ -1,0 +1,9 @@
+{
+  "network": "arc-testnet",
+  "chainId": 5042002,
+  "SkyProofEscrow": "0x10daa2dbded35f0056be1dbdbee908a12e4644d8",
+  "usdc": "0x3600000000000000000000000000000000000000",
+  "forwarder": "0x6E9EE680ef59ef64Aa8C7371279c27E496b5eDc1",
+  "builtIn": "Arc Studio",
+  "studioShare": "https://studio.arc.io/share/sky-proof-escrow-contract-tzqdmj9nlm"
+}
