@@ -21,7 +21,7 @@ The 0G sponsor team said the earlier pitch looked like a solution in search of a
 | Payout on broad "record broken" logic | Payout only on **objective breaches checked against a signed flight permission** | Answers the critique that on-chain payouts lose their edge when fault is judged by hand |
 | 60 s leases renewed through 0G | Continuous telemetry records plus 15 s anchors, and a timeout-based safe stop | Simpler. Gaps stay detectable |
 | "0G Compute TeeML broker" | **0G Private Computer** (pc.0g.ai), OpenAI-compatible, with verified runs and request IDs | This is the product named on the 2026 prize page |
-| Python 3.11 | **Python 3.10** (PyBullet compiled on Windows with MSVC Build Tools) | PyBullet ships no Windows wheels |
+| Python 3.11 | **Python 3.12** (PyBullet compiled on Windows with MSVC Build Tools) | PyBullet ships no Windows wheels; the drone package needs 3.12 |
 
 ---
 
