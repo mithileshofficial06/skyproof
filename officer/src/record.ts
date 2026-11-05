@@ -4,7 +4,7 @@ import { appendFileSync, mkdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { ethers } from "ethers";
 
-export type RecordType = "PERMIT" | "STATE" | "DECISION" | "ACTION" | "SAFE_STOP_LOCAL" | "OVERRIDE" | "CLOSE";
+export type RecordType = "PERMIT" | "SCENE" | "EVENT" | "STATE" | "DECISION" | "ACTION" | "SAFE_STOP_LOCAL" | "OVERRIDE" | "CLOSE";
 
 export interface FlightRecord {
   flightId: string;

@@ -98,10 +98,10 @@
 ## Stage 5: UI (Phase 4)
 | # | Step | Status |
 |---|---|---|
-| 5.1 | Next.js app in `web/` | ⬜ |
-| 5.2 | Mission console: live flight, decision feed with 0G receipts, situations + choices, "cut 0G" button | ⬜ |
-| 5.3 | Flight replay page: loads a flight from 0G, 3D or map path, every decision, ✅/❌ record checks | ⬜ |
-| 5.4 | Victim claim page: claim by drone ID, USDC deposit, verdict, payout | ⬜ |
+| 5.1 | Next.js app in `web/` | ✅ Next 15, Tailwind, react-three-fiber, real drone GLB (CC BY 3.0) |
+| 5.2 | Mission console: live flight, decision feed with 0G receipts, situations + choices, "cut 0G" button | ✅ `/live` (+ camera frame sent to 0G) |
+| 5.3 | Flight replay page: loads a flight from 0G, 3D or map path, every decision, ✅/❌ record checks | ✅ `/flights/[id]`: 3D replay, timeline, HUD, feed, 0G/Chainlink/Arc proof panels |
+| 5.4 | Victim claim page: claim by drone ID, USDC deposit, verdict, payout | ✅ `/claim` with MetaMask on Arc Testnet |
 | 5.5 | Deploy replay + claim pages (e.g. Vercel) → **live demo link** | ⬜ |
 
 ---

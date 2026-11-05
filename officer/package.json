@@ -10,7 +10,8 @@
     "replay": "tsx src/replay.ts",
     "arc-setup": "tsx src/arc-setup.ts",
     "claim": "tsx src/claim.ts",
-    "evidence": "tsx src/evidence.ts"
+    "evidence": "tsx src/evidence.ts",
+    "export-web": "tsx src/export-web.ts"
   },
   "dependencies": {
     "@0gfoundation/0g-storage-ts-sdk": "^1.2.13",

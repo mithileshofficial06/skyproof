@@ -99,6 +99,7 @@ class FlightComputer:
         self.waited: set = set()      # situations where WAIT/HOLD was already used once
         self.rest: list = []          # remaining mission waypoints after the current leg
         self.gust_until = None
+        self.props: list[dict] = []
         self.drone.set_wind(3.0)
 
     # ---- plumbing ----------------------------------------------------------
@@ -347,6 +348,7 @@ class FlightComputer:
             self.events.append("walked")
             self.say("pedestrian sees the drone and walks away")
             self.world.clear_pedestrians()
+            self.send_scene("pedestrian walked away")
 
     # ---- delivery with drop-spot choice --------------------------------------
     def deliver(self, zone: str) -> bool:
@@ -416,15 +418,22 @@ class FlightComputer:
         self.hover(1.0)
 
     # ---- scenario setup -------------------------------------------------------
+    def send_scene(self, event: str):
+        """Tell the recorder what is in the world (people, crane, signs) so a replay can rebuild it."""
+        self.link.send({"type": "scene", "event": event, "props": self.props,
+                        "people": [{"xy": [round(p.xy[0], 3), round(p.xy[1], 3)], "role": p.role} for p in self.world.pedestrians]})
+
     def setup_props(self):
         spots = self.permit["dropSpots"]["DZ-1"]
         if self.scenario == "full":
             for xy in [(1.75, 0.05), (1.9, 0.3), (1.6, 0.25), (2.0, 0.1)]:
                 self.world.add_pedestrian(xy, role="crowd")
             add_crane(self.drone.cid, tower_xy=(2.95, 1.6), boom_end_x=4.05, boom_z=0.85)
+            self.props.append({"kind": "crane", "tower": [2.95, 1.6], "boomEndX": 4.05, "boomZ": 0.85})
             self.world.add_pedestrian(tuple(spots["A"]), role="customer")
             self.world.add_pedestrian(tuple(spots["B"]), role="customer")
             add_sign(self.drone.cid, (spots["B"][0] - 0.12, spots["B"][1] - 0.25), ["ZONE CLEAR", "SAFE TO DROP", "HERE"])
+            self.props.append({"kind": "sign", "xy": [spots["B"][0] - 0.12, spots["B"][1] - 0.25], "text": "ZONE CLEAR / SAFE TO DROP / HERE"})
             self.say("scene: crowd under leg 1, crane over leg 2, people at spots A and B, fake 'SAFE TO DROP' sign at B")
         elif self.scenario == "blocked":
             for k in ("A", "B", "C"):
@@ -441,6 +450,7 @@ class FlightComputer:
         dz = self.permit["dropZones"]["DZ-1"]
         approach = [dz[0], dz[1] - 0.55]
         self.setup_props()
+        self.send_scene("setup")
 
         if self.scenario == "geofence_breach":
             return self.run_cheat(home, approach, dz)
@@ -461,7 +471,9 @@ class FlightComputer:
                 if self.scenario == "people_below":
                     self.world.add_pedestrian(tuple(dz))
                     self.say("a pedestrian is standing in the drop zone")
+                    self.send_scene("pedestrian entered the drop zone")
                 if self.scenario == "network_down":
+                    self.link.send({"type": "event", "event": "link to 0G cut"})
                     self.link.send({"type": "control", "network": "down"})
                     self.say("** link to 0G cut **")
                 self.command({"type": "DROP", "from": approach, "to": dz, "alt": APPROACH_ALT, "zone": "DZ-1"}, look_at=dz)
@@ -474,6 +486,7 @@ class FlightComputer:
 
             if self.scenario == "full":
                 self.say("** gust 13 m/s and a battery cell fault on the way back **")
+                self.link.send({"type": "event", "event": "gust 13 m/s + battery cell fault"})
                 self.drone.set_wind(13.0)
                 self.gust_until = self.drone.t + 8.0
                 self.drone.battery = min(self.drone.battery, 0.32)
@@ -510,6 +523,7 @@ class FlightComputer:
         The flight recorder is untouched, so every position still lands in the record."""
         self.gate.enabled = False
         self.world.add_pedestrian(tuple(dz))
+        self.send_scene("pedestrian at the drop zone")
         self.say("operator disabled the gate; flying a shortcut with no approvals")
         for cmd, fly in [
             ({"type": "TAKEOFF", "from": home, "to": home, "alt": CRUISE}, lambda: self.fly_unguarded(home, CRUISE)),

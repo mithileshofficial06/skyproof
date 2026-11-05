@@ -129,40 +129,79 @@ async function choose(s: Session, msg: any) {
   return { type: "choice", nonce: req.nonce, requestHash, verdict, choice, code: choice ?? "NO_DECISION", reason, source, vetoed, legal: legal.map((o) => o.id), decisionHash: record.hash, zgRequestId: zg?.zgRequestId ?? null };
 }
 
+// Live watchers (the web mission console). They see everything the recorder sees.
+const watchers = new Set<WebSocket>();
+let lastSession: Session | null = null;
+function broadcast(msg: unknown) {
+  const text = JSON.stringify(msg);
+  for (const w of watchers) if (w.readyState === w.OPEN) w.send(text);
+}
+
 const wss = new WebSocketServer({ port: PORT });
 wss.on("connection", (ws: WebSocket) => {
   let s: Session | null = null;
+  ws.on("close", () => watchers.delete(ws));
   ws.on("message", async (raw) => {
     const msg = JSON.parse(raw.toString());
     try {
+      if (msg.type === "watch") {
+        watchers.add(ws);
+        ws.send(JSON.stringify({ type: "watching", flightId: lastSession?.rec.flightId ?? null, permit, permitHash }));
+        return;
+      }
+      if (msg.type === "control" && watchers.has(ws)) {
+        if (lastSession) lastSession.netDown = msg.network === "down";
+        log(`(console) link to 0G is now ${msg.network === "down" ? "DOWN" : "UP"}`);
+        broadcast({ type: "control", network: msg.network });
+        return;
+      }
       switch (msg.type) {
         case "hello": {
           const flightId = `${permit.airframeId}-${msg.scenario}-${Date.now()}`;
           s = { rec: new FlightRecorder(flightId, signer), sealer: null, netDown: false, samples: [], lastBatch: Date.now() };
           s.rec.append("PERMIT", { permitHash, permit, signer: signer.address, visionModel: process.env.ZG_VISION_MODEL, promptHash: PROMPT_HASH, situationPromptHash: SITUATION_PROMPT_HASH, scenario: msg.scenario });
           if (ONCHAIN) s.sealer = new FlightSealer(s.rec, permit.airframeId, permitHash, log);
+          lastSession = s;
+          broadcast({ type: "flight", flightId, scenario: msg.scenario, permitHash, chainFlightId: s.sealer?.manifest.chainFlightId ?? null });
           log(`flight ${flightId} opened (record signer ${signer.address})`);
           ws.send(JSON.stringify({ type: "hello", flightId, permitHash }));
           break;
         }
-        case "request":
-          ws.send(JSON.stringify(await decide(s!, msg)));
+        case "request": {
+          const d = await decide(s!, msg);
+          ws.send(JSON.stringify(d));
+          broadcast({ ...d, type: "decision", request: JSON.parse(msg.body), frame: msg.frame ?? null });
           break;
-        case "situation":
-          ws.send(JSON.stringify(await choose(s!, msg)));
+        }
+        case "situation": {
+          const c = await choose(s!, msg);
+          ws.send(JSON.stringify(c));
+          broadcast({ ...c, type: "choice", request: JSON.parse(msg.body), frame: msg.frame ?? null });
+          break;
+        }
+        case "scene":
+          s!.rec.append("SCENE", { event: msg.event, props: msg.props, people: msg.people });
+          broadcast({ type: "scene", event: msg.event, props: msg.props, people: msg.people });
+          break;
+        case "event":
+          s!.rec.append("EVENT", { event: msg.event });
+          broadcast({ type: "event", event: msg.event });
           break;
         case "telemetry":
+          broadcast({ type: "telemetry", state: msg.state });
           s!.samples.push(msg.state);
           if (Date.now() - s!.lastBatch >= STATE_BATCH_MS) flushState(s!);
           break;
         case "action":
           flushState(s!);
           s!.rec.append("ACTION", { cmd: msg.cmd, decisionHash: msg.decisionHash ?? null, state: msg.state });
+          broadcast({ type: "action", cmd: msg.cmd, approved: !!msg.decisionHash, state: msg.state });
           log(`ACTION  ${msg.cmd.type}${msg.cmd.choice ? " " + msg.cmd.choice : ""} executed${msg.decisionHash ? "" : "  ** WITHOUT an approved decision **"}`);
           break;
         case "safe_stop":
           flushState(s!);
           s!.rec.append("SAFE_STOP_LOCAL", { step: msg.step, detail: msg.detail, note: "pre-approved local policy, no 0G decision claimed" });
+          broadcast({ type: "safe_stop", step: msg.step, detail: msg.detail });
           log(`SAFE_STOP_LOCAL ${msg.step}: ${msg.detail}`);
           break;
         case "override":
@@ -172,6 +211,7 @@ wss.on("connection", (ws: WebSocket) => {
           break;
         case "control":
           s!.netDown = msg.network === "down";
+          broadcast({ type: "control", network: msg.network });
           log(`link to 0G is now ${s!.netDown ? "DOWN" : "UP"}`);
           break;
         case "close":
@@ -179,6 +219,7 @@ wss.on("connection", (ws: WebSocket) => {
           s!.rec.append("CLOSE", { finalState: msg.state });
           log(`flight closed: ${s!.rec.seq} records, head ${s!.rec.head}\n         file ${s!.rec.file}`);
           ws.send(JSON.stringify({ type: "closed", records: s!.rec.seq, head: s!.rec.head, file: s!.rec.file, sealing: !!s!.sealer }));
+          broadcast({ type: "closed", flightId: s!.rec.flightId, records: s!.rec.seq, chainFlightId: s!.sealer?.manifest.chainFlightId ?? null });
           s!.sealer?.finish();
           break;
       }
