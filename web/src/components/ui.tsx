@@ -5,10 +5,10 @@ export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Bool
 
 export function Panel({ title, icon, right, children, className }: { title?: string; icon?: ReactNode; right?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={cx("rounded-2xl border border-white/10 bg-white/[0.035] shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset] backdrop-blur-xl", className)}>
+    <section className={cx("rounded-lg border border-[#e3ded3] bg-[#fffdf8]", className)}>
       {title && (
-        <header className="flex items-center justify-between gap-3 border-b border-white/[0.07] px-4 py-3">
-          <h3 className="flex items-center gap-2 text-[13px] font-semibold tracking-wide text-slate-200">
+        <header className="flex items-center justify-between gap-3 border-b border-[#ece7dc] px-4 py-3">
+          <h3 className="flex items-center gap-2 text-[13px] font-semibold text-[#15171a]">
             {icon}
             {title}
           </h3>
@@ -21,36 +21,36 @@ export function Panel({ title, icon, right, children, className }: { title?: str
 }
 
 const TONES = {
-  zg: "border-violet-400/30 bg-violet-500/15 text-violet-200",
-  ok: "border-emerald-400/30 bg-emerald-500/15 text-emerald-200",
-  deny: "border-rose-400/30 bg-rose-500/15 text-rose-200",
-  warn: "border-amber-400/30 bg-amber-500/15 text-amber-200",
-  info: "border-sky-400/30 bg-sky-500/15 text-sky-200",
-  link: "border-blue-400/30 bg-blue-500/15 text-blue-200",
-  arc: "border-cyan-400/30 bg-cyan-500/15 text-cyan-200",
-  mute: "border-white/10 bg-white/5 text-slate-300",
+  zg: "border-[#c7c2ef] bg-[#f1effd] text-[#3b2fa8]",
+  ok: "border-[#b7dcd6] bg-[#ecf7f5] text-[#0f5f59]",
+  deny: "border-[#f0c4c4] bg-[#fdf0f0] text-[#9b1c1c]",
+  warn: "border-[#efd3a6] bg-[#fdf6ea] text-[#92400e]",
+  info: "border-[#d4d9e0] bg-[#f3f5f8] text-[#334155]",
+  link: "border-[#c9d6ef] bg-[#eef3fc] text-[#1e40af]",
+  arc: "border-[#bfe0e8] bg-[#eef8fa] text-[#155e75]",
+  mute: "border-[#e3ded3] bg-[#f6f3ec] text-[#55595f]",
 } as const;
 export type Tone = keyof typeof TONES;
 
 export function Badge({ tone = "mute", children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
-  return <span className={cx("inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium", TONES[tone], className)}>{children}</span>;
+  return <span className={cx("inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px] font-medium", TONES[tone], className)}>{children}</span>;
 }
 
 export function Stat({ label, value, sub, tone }: { label: string; value: ReactNode; sub?: ReactNode; tone?: "good" | "bad" | "warn" }) {
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-black/20 px-3 py-2.5">
-      <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-slate-400">{label}</div>
-      <div className={cx("mt-1 font-mono text-lg font-semibold tabular-nums", tone === "good" ? "text-emerald-300" : tone === "bad" ? "text-rose-300" : tone === "warn" ? "text-amber-300" : "text-slate-100")}>{value}</div>
-      {sub && <div className="mt-0.5 text-[11px] text-slate-500">{sub}</div>}
+    <div className="rounded-md border border-[#ece7dc] bg-[#faf8f3] px-3 py-2.5">
+      <div className="text-[10px] font-medium uppercase tracking-[0.12em] text-[#8a8d93]">{label}</div>
+      <div className={cx("mt-1 font-mono text-lg font-semibold tabular-nums", tone === "good" ? "text-[#0f766e]" : tone === "bad" ? "text-[#b91c1c]" : tone === "warn" ? "text-[#b45309]" : "text-[#15171a]")}>{value}</div>
+      {sub && <div className="mt-0.5 text-[11px] text-[#8a8d93]">{sub}</div>}
     </div>
   );
 }
 
 export function HashLink({ href, hash, n = 8 }: { href?: string; hash?: string | null; n?: number }) {
-  if (!hash) return <span className="font-mono text-xs text-slate-500">—</span>;
-  const body = <span className="font-mono text-xs text-slate-300">{short(hash, n)}</span>;
+  if (!hash) return <span className="font-mono text-xs text-[#8a8d93]">—</span>;
+  const body = <span className="font-mono text-xs text-[#33363b]">{short(hash, n)}</span>;
   return href ? (
-    <a href={href} target="_blank" rel="noreferrer" className="underline decoration-white/20 underline-offset-2 hover:text-white hover:decoration-white/60">
+    <a href={href} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8ba] underline-offset-2 hover:decoration-[#15171a]">
       {body}
     </a>
   ) : (
@@ -62,17 +62,19 @@ export const sourceTone = (s?: string): Tone => (s?.startsWith("0G") ? "zg" : s 
 
 export function Logo({ className }: { className?: string }) {
   return (
-    <span className={cx("inline-flex items-center gap-2 font-semibold tracking-tight", className)}>
-      <span className="relative grid h-7 w-7 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 via-violet-500 to-fuchsia-500 shadow-[0_0_24px_-4px_rgba(139,92,246,0.8)]">
-        <svg viewBox="0 0 24 24" className="h-4 w-4 text-white" fill="none" stroke="currentColor" strokeWidth="2.2">
-          <circle cx="6" cy="6" r="2.5" />
-          <circle cx="18" cy="6" r="2.5" />
-          <circle cx="6" cy="18" r="2.5" />
-          <circle cx="18" cy="18" r="2.5" />
-          <path d="M8 8l8 8M16 8l-8 8" />
-        </svg>
-      </span>
-      Sky<span className="-ml-2 text-cyan-300">Proof</span>
+    <span className={cx("inline-flex items-center gap-2 font-semibold tracking-tight text-[#15171a]", className)}>
+      <svg viewBox="0 0 28 28" className="h-7 w-7">
+        <rect width="28" height="28" rx="6" fill="#15171a" />
+        <g stroke="#f4f1ea" strokeWidth="1.8" fill="none">
+          <circle cx="8.5" cy="8.5" r="3" />
+          <circle cx="19.5" cy="8.5" r="3" />
+          <circle cx="8.5" cy="19.5" r="3" />
+          <circle cx="19.5" cy="19.5" r="3" />
+          <path d="M11 11l6 6M17 11l-6 6" />
+        </g>
+        <rect x="12" y="12" width="4" height="4" fill="#c2410c" />
+      </svg>
+      SkyProof
     </span>
   );
 }

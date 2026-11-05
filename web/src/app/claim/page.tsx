@@ -170,8 +170,8 @@ export default function Claim() {
   return (
     <div className="mx-auto max-w-5xl space-y-6 pt-2">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-white">File a claim</h1>
-        <p className="mt-1 max-w-3xl text-sm text-slate-400">Hurt by a SkyProof drone? File a claim on Arc with a 1 USDC refundable deposit. After the 2-minute claim window, the Chainlink judge rebuilds the flight from 0G and, if an objective rule was broken, the operator&apos;s bond pays you automatically.</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-[#15171a]">File a claim</h1>
+        <p className="mt-1 max-w-3xl text-sm text-[#55595f]">Hurt by a SkyProof drone? File a claim on Arc with a 1 USDC refundable deposit. After the 2-minute claim window, the Chainlink judge rebuilds the flight from 0G and, if an objective rule was broken, the operator&apos;s bond pays you automatically.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
@@ -185,18 +185,18 @@ export default function Claim() {
         {account ? (
           <div className="flex items-center gap-2 text-sm">
             <Badge tone="ok">Connected</Badge>
-            <span className="font-mono text-slate-300">{account}</span>
+            <span className="font-mono text-[#33363b]">{account}</span>
             <Badge tone="arc">Arc Testnet</Badge>
           </div>
         ) : (
-          <button onClick={connect} className="rounded-xl bg-gradient-to-r from-cyan-400 to-violet-500 px-5 py-2.5 text-sm font-semibold text-white">
+          <button onClick={connect} className="rounded-md bg-[#15171a] px-5 py-2.5 text-sm font-semibold text-[#f4f1ea] hover:bg-[#2b2e33]">
             Connect MetaMask
           </button>
         )}
       </Panel>
 
       <Panel title="2 · Which flight?">
-        <select value={flightId} onChange={(e) => setFlightId(e.target.value)} className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-slate-100">
+        <select value={flightId} onChange={(e) => setFlightId(e.target.value)} className="w-full rounded-md border border-[#e3ded3] bg-[#f6f3ec] px-3 py-2.5 text-sm text-[#15171a]">
           {flightsWithDrop.map((f) => (
             <option key={f.flightId} value={f.flightId}>
               {scenarioLabel(f.scenario)} · {new Date(f.startedAt).toLocaleString()} · verdict preview {f.verdict}
@@ -204,28 +204,28 @@ export default function Claim() {
           ))}
         </select>
         {incident && (
-          <div className="mt-3 grid gap-2 text-xs text-slate-400 sm:grid-cols-3">
-            <div>Incident time: <span className="font-mono text-slate-200">{new Date(incident.time * 1000).toLocaleTimeString()}</span></div>
-            <div>Where the package came down: <span className="font-mono text-slate-200">[{incident.pos.map((x) => x.toFixed(2)).join(", ")}]</span></div>
-            <div>Evidence: <span className="text-slate-200">sealed flight record on 0G</span></div>
+          <div className="mt-3 grid gap-2 text-xs text-[#55595f] sm:grid-cols-3">
+            <div>Incident time: <span className="font-mono text-[#15171a]">{new Date(incident.time * 1000).toLocaleTimeString()}</span></div>
+            <div>Where the package came down: <span className="font-mono text-[#15171a]">[{incident.pos.map((x) => x.toFixed(2)).join(", ")}]</span></div>
+            <div>Evidence: <span className="text-[#15171a]">sealed flight record on 0G</span></div>
           </div>
         )}
       </Panel>
 
       <Panel title="3 · Open the claim">
-        <button disabled={!account || !incident || !!busy || claimId !== null || !info?.active} onClick={fileClaim} className="rounded-xl bg-gradient-to-r from-cyan-400 to-violet-500 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">
+        <button disabled={!account || !incident || !!busy || claimId !== null || !info?.active} onClick={fileClaim} className="rounded-md bg-[#15171a] px-5 py-2.5 text-sm font-semibold text-[#f4f1ea] hover:bg-[#2b2e33] disabled:opacity-40">
           {busy && claimId === null ? `${busy}…` : claimId !== null ? `Claim #${claimId} opened` : "Deposit 1 USDC and open the claim"}
         </button>
-        {!info?.active && <p className="mt-2 text-xs text-amber-300">The drone is inactive: the operator&apos;s bond is below the payout cap.</p>}
+        {!info?.active && <p className="mt-2 text-xs text-[#b45309]">The drone is inactive: the operator&apos;s bond is below the payout cap.</p>}
       </Panel>
 
       <Panel title="4 · Claim window">
         {claimId === null ? (
-          <p className="text-sm text-slate-500">Opens after the claim is filed. Other claims for the same incident can join during this window.</p>
+          <p className="text-sm text-[#8a8d93]">Opens after the claim is filed. Other claims for the same incident can join during this window.</p>
         ) : (
           <div className="flex flex-wrap items-center gap-4">
-            <div className="font-mono text-4xl font-semibold tabular-nums text-white">{remaining !== null ? `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` : "…"}</div>
-            <button disabled={!!busy || (remaining ?? 1) > 0 || state !== "Open"} onClick={closeWindow} className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-100 disabled:opacity-40">
+            <div className="font-mono text-4xl font-semibold tabular-nums text-[#15171a]">{remaining !== null ? `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` : "…"}</div>
+            <button disabled={!!busy || (remaining ?? 1) > 0 || state !== "Open"} onClick={closeWindow} className="rounded-md border border-[#cfc8ba] bg-[#fffdf8] px-4 py-2 text-sm font-semibold text-[#15171a] disabled:opacity-40">
               {busy === "Close claim window" ? "Closing…" : state && state !== "Open" ? "Window closed" : "Close the window"}
             </button>
           </div>
@@ -234,17 +234,17 @@ export default function Claim() {
 
       <Panel title="5 · The Chainlink judge" right={state && <Badge tone={state === "Paid" ? "ok" : state === "Held" ? "warn" : "mute"}>{state}</Badge>}>
         {!closeTx ? (
-          <p className="text-sm text-slate-500">Closing the window emits <span className="font-mono">ClaimWindowClosed</span>, the event that triggers the Chainlink CRE workflow.</p>
+          <p className="text-sm text-[#8a8d93]">Closing the window emits <span className="font-mono">ClaimWindowClosed</span>, the event that triggers the Chainlink CRE workflow.</p>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm text-slate-300">Run the judge on this event (CRE simulation, broadcast to Arc):</p>
-            <pre className="overflow-x-auto rounded-xl bg-black/40 p-4 font-mono text-xs text-slate-300">{`cd cre/judge
+            <p className="text-sm text-[#33363b]">Run the judge on this event (CRE simulation, broadcast to Arc):</p>
+            <pre className="overflow-x-auto rounded-md bg-[#f6f3ec] p-4 font-mono text-xs text-[#33363b]">{`cd cre/judge
 cre workflow simulate verdict --non-interactive --trigger-index 0 \\
   --evm-tx-hash ${closeTx} --evm-event-index 0 --broadcast -T staging-settings`}</pre>
             {claim && claim.verdict > 0 && (
-              <div className={cx("rounded-xl border p-4", claim.verdict === 1 ? "border-emerald-400/40 bg-emerald-500/10" : "border-amber-400/40 bg-amber-500/10")}>
-                <div className="text-lg font-semibold text-white">{claim.verdict === 1 ? `BREACH · ${formatUnits(claim.cap, 6)} USDC paid to you` : "REVIEW · funds held for the insurer"}</div>
-                <div className="mt-1 text-xs text-slate-400">{claim.verdict === 1 ? "Your 1 USDC deposit was refunded too." : "No objective rule was broken; the insurer decides with the verified evidence."}</div>
+              <div className={cx("rounded-md border p-4", claim.verdict === 1 ? "border-[#b7dcd6] bg-[#ecf7f5]" : "border-[#efd3a6] bg-[#fdf6ea]")}>
+                <div className="text-lg font-semibold text-[#15171a]">{claim.verdict === 1 ? `BREACH · ${formatUnits(claim.cap, 6)} USDC paid to you` : "REVIEW · funds held for the insurer"}</div>
+                <div className="mt-1 text-xs text-[#55595f]">{claim.verdict === 1 ? "Your 1 USDC deposit was refunded too." : "No objective rule was broken; the insurer decides with the verified evidence."}</div>
               </div>
             )}
           </div>
@@ -256,14 +256,14 @@ cre workflow simulate verdict --non-interactive --trigger-index 0 \\
           <ul className="space-y-1.5 text-sm">
             {txs.map((t) => (
               <li key={t.hash} className="flex items-center justify-between">
-                <span className="text-slate-300">{t.label}</span>
+                <span className="text-[#33363b]">{t.label}</span>
                 <HashLink hash={t.hash} href={`${ARC_EXPLORER}/tx/${t.hash}`} />
               </li>
             ))}
           </ul>
         </Panel>
       )}
-      {error && <p className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">{error}</p>}
+      {error && <p className="rounded-md border border-[#f0c4c4] bg-[#fdf0f0] px-4 py-3 text-sm text-[#9b1c1c]">{error}</p>}
     </div>
   );
 }

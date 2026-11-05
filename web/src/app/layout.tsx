@@ -8,7 +8,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: "SkyProof · An independent black box for autonomous drones",
-  description: "0G decides and records. Chainlink judges. Arc pays. Every drone decision is made by 0G AI, sealed on 0G Storage and 0G Chain, judged by Chainlink CRE and settled in USDC on Arc.",
+  description: "0G decides and records. Chainlink judges. Arc pays.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -16,9 +16,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} min-h-screen font-sans antialiased`}>
         <Nav />
-        <main className="mx-auto w-full max-w-[1500px] px-4 pb-16 pt-20 sm:px-6">{children}</main>
-        <footer className="border-t border-white/[0.06] py-6 text-center text-xs text-slate-500">
-          SkyProof · ETHGlobal Mumbai 2026 · 0G · Arc · Chainlink CRE · Drone model &quot;Drone&quot; by NateGazzard (CC BY 3.0, poly.pizza)
+        <main className="mx-auto w-full max-w-[1400px] px-5 pb-20 pt-20 sm:px-8">{children}</main>
+        <footer className="border-t border-[#e3ded3] py-8 text-center text-xs text-[#8a8d93]">
+          SkyProof · ETHGlobal Mumbai 2026 · built on 0G, Chainlink CRE and Arc · drone model &quot;Drone&quot; by NateGazzard (CC BY 3.0)
         </footer>
       </body>
     </html>

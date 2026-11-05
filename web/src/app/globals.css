@@ -5,44 +5,25 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-:root {
-  color-scheme: dark;
-}
-
 html,
 body {
-  background: #05070d;
-  color: #e2e8f0;
-}
-
-body {
-  background-image:
-    radial-gradient(1200px 600px at 15% -10%, rgba(34, 211, 238, 0.1), transparent 60%),
-    radial-gradient(900px 500px at 90% 0%, rgba(139, 92, 246, 0.14), transparent 60%),
-    radial-gradient(800px 600px at 50% 120%, rgba(14, 165, 233, 0.06), transparent 60%);
-  background-attachment: fixed;
+  background: #f4f1ea;
+  color: #15171a;
 }
 
 ::selection {
-  background: rgba(139, 92, 246, 0.45);
+  background: #fbd6c5;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.25) transparent;
+  scrollbar-color: #cfc8ba transparent;
 }
 
-.grid-bg {
-  background-image:
-    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
-}
-
-.text-gradient {
-  background: linear-gradient(100deg, #67e8f9 0%, #a78bfa 45%, #f0abfc 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+/* hero animation */
+@keyframes dash { 0% { stroke-dashoffset: 1; } 72%, 100% { stroke-dashoffset: 0; } }
+.route-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: dash 14s linear infinite; }
+@keyframes rotor { to { transform: rotate(360deg); } }
+.rotor { transform-box: fill-box; transform-origin: center; animation: rotor 0.25s linear infinite; }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 0.7s ease-out both; }

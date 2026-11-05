@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { EventFeed } from "@/components/EventFeed";
 import { Badge, cx, Panel, Stat } from "@/components/ui";
 import type { FlightEvent, Permit, Person, Prop, XY } from "@/lib/flight";
+import { deriveFx } from "@/lib/fx";
 
 const Scene3D = dynamic(() => import("@/components/Scene3D"), { ssr: false });
 const WS_URL = process.env.NEXT_PUBLIC_OFFICER_WS || "ws://localhost:8787";
@@ -125,19 +126,20 @@ export default function Live() {
 
   const last = events[events.length - 1];
   const status = last?.status === "breach" ? "breach" : last?.status === "deny" ? "deny" : last?.status === "warn" ? "warn" : "ok";
+  const fx = state ? deriveFx(events, state.t, () => ({ pos: state.pos, alt: state.alt }), !!permit && state.windMs > permit.maxWindMs) : undefined;
   const toggleNet = () => ws.current?.send(JSON.stringify({ type: "control", network: netDown ? "up" : "down" }));
 
   return (
     <div className="space-y-5 pt-2">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">Live mission console</h1>
-          <p className="mt-1 text-sm text-slate-400">Streams from the officer service while the PyBullet drone flies. Every decision below is being made by 0G right now.</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-[#15171a]">Live mission console</h1>
+          <p className="mt-1 text-sm text-[#55595f]">Streams from the officer service while the PyBullet drone flies. Every decision below is being made by 0G right now.</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge tone={conn === "open" ? "ok" : conn === "connecting" ? "warn" : "deny"}>{conn === "open" ? "Officer connected" : conn === "connecting" ? "Connecting…" : "Officer offline"}</Badge>
           {flightId && <Badge tone="zg">{flightId}</Badge>}
-          <button onClick={toggleNet} disabled={conn !== "open"} className={cx("rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-40", netDown ? "border-emerald-400/40 bg-emerald-500/15 text-emerald-200" : "border-rose-400/40 bg-rose-500/15 text-rose-200 hover:bg-rose-500/25")}>
+          <button onClick={toggleNet} disabled={conn !== "open"} className={cx("rounded-lg border px-3 py-1.5 text-xs font-semibold transition disabled:opacity-40", netDown ? "border-[#b7dcd6] bg-[#ecf7f5] text-[#0f5f59]" : "border-[#f0c4c4] bg-[#fdf0f0] text-[#9b1c1c] hover:bg-[#fbe4e4]")}>
             {netDown ? "Restore 0G link" : "Cut 0G link"}
           </button>
         </div>
@@ -145,22 +147,22 @@ export default function Live() {
 
       {conn !== "open" && (
         <Panel>
-          <p className="text-sm text-slate-300">Start the officer and fly a mission to watch it live:</p>
-          <pre className="mt-3 overflow-x-auto rounded-xl bg-black/40 p-4 font-mono text-xs text-slate-300">{`cd officer; pnpm officer
+          <p className="text-sm text-[#33363b]">Start the officer and fly a mission to watch it live:</p>
+          <pre className="mt-3 overflow-x-auto rounded-md bg-[#f6f3ec] p-4 font-mono text-xs text-[#33363b]">{`cd officer; pnpm officer
 cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
         </Panel>
       )}
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="space-y-4">
-          <div className="relative h-[60vh] min-h-[440px] overflow-hidden rounded-2xl border border-white/10 bg-black">
+          <div className="relative h-[60vh] min-h-[440px] overflow-hidden rounded-lg border border-[#e3ded3] bg-[#dfe7ec]">
             {permit ? (
-              <Scene3D permit={permit} drone={{ pos: state?.pos ?? permit.rallyPoints.HOME, alt: state?.alt ?? 0.05, vel: state?.vel ?? [0, 0, 0], status }} trail={trail} people={people} props={props} />
+              <Scene3D permit={permit} drone={{ pos: state?.pos ?? permit.rallyPoints.HOME, alt: state?.alt ?? 0.05, vel: state?.vel ?? [0, 0, 0], status: fx?.label?.tone ?? status }} trail={trail} people={people} props={props} fx={fx} follow />
             ) : (
-              <div className="grid h-full place-items-center text-sm text-slate-500">Waiting for the officer…</div>
+              <div className="grid h-full place-items-center text-sm text-[#8a8d93]">Waiting for the officer…</div>
             )}
-            {netDown && <div className="pointer-events-none absolute inset-x-0 top-0 bg-rose-600/80 py-1.5 text-center text-xs font-semibold tracking-wide text-white">LINK TO 0G CUT · the drone may not act until a safe stop</div>}
-            {closed && <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-violet-400/40 bg-black/70 px-4 py-1.5 text-xs text-violet-200 backdrop-blur">Flight closed · sealing on 0G Storage + 0G Chain</div>}
+            {netDown && <div className="pointer-events-none absolute inset-x-0 top-0 bg-[#b91c1c] py-1.5 text-center text-xs font-semibold tracking-wide text-[#fff7f0]">LINK TO 0G CUT · the drone may not act until a safe stop</div>}
+            {closed && <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-[#d9d3c6] bg-[#fffdf8] px-4 py-1.5 text-xs text-[#3b2fa8]">Flight closed · sealing on 0G Storage + 0G Chain</div>}
           </div>
           <div className="grid items-start gap-4 md:grid-cols-[1fr_320px]">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -173,17 +175,17 @@ cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
               {frame ? (
                 <div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={frame.src} alt="drone camera frame" className="w-full rounded-lg border border-white/10" />
-                  <div className="mt-2 text-xs text-slate-400">{frame.label} · sent to 0G</div>
+                  <img src={frame.src} alt="drone camera frame" className="w-full rounded-lg border border-[#e3ded3]" />
+                  <div className="mt-2 text-xs text-[#55595f]">{frame.label} · sent to 0G</div>
                 </div>
               ) : (
-                <p className="text-xs text-slate-500">Camera frames appear here when the drone asks 0G.</p>
+                <p className="text-xs text-[#8a8d93]">Camera frames appear here when the drone asks 0G.</p>
               )}
             </Panel>
           </div>
         </div>
-        <Panel title="Live decisions" icon={<span className="h-2 w-2 animate-pulse rounded-full bg-violet-400" />} className="xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
-          <div className="max-h-[70vh] overflow-y-auto pr-1">{events.length ? <EventFeed events={events} now={Number.POSITIVE_INFINITY} /> : <p className="text-sm text-slate-500">No flight yet.</p>}</div>
+        <Panel title="Live decisions" icon={<span className="h-2 w-2 rounded-sm bg-[#c2410c]" />} className="xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
+          <div className="max-h-[70vh] overflow-y-auto pr-1">{events.length ? <EventFeed events={events} now={Number.POSITIVE_INFINITY} /> : <p className="text-sm text-[#8a8d93]">No flight yet.</p>}</div>
         </Panel>
       </div>
     </div>
