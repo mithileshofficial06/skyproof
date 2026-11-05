@@ -7,17 +7,21 @@ import { ethers } from "ethers";
 import { need } from "./env.js";
 import { loadPermit } from "./permit.js";
 import { checkHardRules, vetoOption, type Cmd, type DroneState, type Situation } from "./rules.js";
-import { zgDecide, zgChoose, ZgUnreachable, PROMPT_HASH } from "./zg.js";
+import { zgDecide, zgChoose, ZgUnreachable, PROMPT_HASH, SITUATION_PROMPT_HASH } from "./zg.js";
 import { FlightRecorder } from "./record.js";
+import { FlightSealer } from "./sealer.js";
+import { operatorWallet, loadDeployment } from "./chain.js";
 
 const PORT = Number(process.env.OFFICER_PORT || 8787);
 const STATE_BATCH_MS = 5000;
 
 const { permit, permitHash } = loadPermit();
-const signer = new ethers.Wallet(process.env.OPERATOR_PRIVATE_KEY?.trim() || need("DEPLOYER_PRIVATE_KEY"));
+const signer = operatorWallet(); // signs records; the same key anchors them on 0G Chain
+const ONCHAIN = process.env.SKYPROOF_ONCHAIN !== "0" && loadDeployment() !== null;
 
 interface Session {
   rec: FlightRecorder;
+  sealer: FlightSealer | null;
   netDown: boolean;
   samples: DroneState[];
   lastBatch: number;
@@ -134,8 +138,9 @@ wss.on("connection", (ws: WebSocket) => {
       switch (msg.type) {
         case "hello": {
           const flightId = `${permit.airframeId}-${msg.scenario}-${Date.now()}`;
-          s = { rec: new FlightRecorder(flightId, signer), netDown: false, samples: [], lastBatch: Date.now() };
-          s.rec.append("PERMIT", { permitHash, permit, signer: signer.address, visionModel: process.env.ZG_VISION_MODEL, promptHash: PROMPT_HASH, scenario: msg.scenario });
+          s = { rec: new FlightRecorder(flightId, signer), sealer: null, netDown: false, samples: [], lastBatch: Date.now() };
+          s.rec.append("PERMIT", { permitHash, permit, signer: signer.address, visionModel: process.env.ZG_VISION_MODEL, promptHash: PROMPT_HASH, situationPromptHash: SITUATION_PROMPT_HASH, scenario: msg.scenario });
+          if (ONCHAIN) s.sealer = new FlightSealer(s.rec, permit.airframeId, permitHash, log);
           log(`flight ${flightId} opened (record signer ${signer.address})`);
           ws.send(JSON.stringify({ type: "hello", flightId, permitHash }));
           break;
@@ -173,7 +178,8 @@ wss.on("connection", (ws: WebSocket) => {
           flushState(s!);
           s!.rec.append("CLOSE", { finalState: msg.state });
           log(`flight closed: ${s!.rec.seq} records, head ${s!.rec.head}\n         file ${s!.rec.file}`);
-          ws.send(JSON.stringify({ type: "closed", records: s!.rec.seq, head: s!.rec.head, file: s!.rec.file }));
+          ws.send(JSON.stringify({ type: "closed", records: s!.rec.seq, head: s!.rec.head, file: s!.rec.file, sealing: !!s!.sealer }));
+          s!.sealer?.finish();
           break;
       }
     } catch (e) {
@@ -182,4 +188,4 @@ wss.on("connection", (ws: WebSocket) => {
     }
   });
 });
-log(`officer listening on ws://localhost:${PORT}  model ${process.env.ZG_VISION_MODEL}  permit ${permitHash.slice(0, 18)}…`);
+log(`officer listening on ws://localhost:${PORT}  model ${process.env.ZG_VISION_MODEL}  permit ${permitHash.slice(0, 18)}  0G sealing ${ONCHAIN ? "ON" : "OFF"}  operator ${signer.address}`);

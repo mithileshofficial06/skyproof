@@ -5,7 +5,9 @@
   "scripts": {
     "d4": "tsx src/tests/d4-storage.ts",
     "officer": "tsx src/server.ts",
-    "test": "tsx --test src/**/*.test.ts"
+    "test": "tsx --test src/**/*.test.ts",
+    "setup-chain": "tsx src/setup-chain.ts",
+    "replay": "tsx src/replay.ts"
   },
   "dependencies": {
     "@0gfoundation/0g-storage-ts-sdk": "^1.2.13",

@@ -4,7 +4,8 @@
   "scripts": {
     "build": "hardhat compile",
     "test": "hardhat test",
-    "d5": "hardhat run scripts/d5-deploy-ping.ts --network galileo"
+    "d5": "hardhat run scripts/d5-deploy-ping.ts --network galileo",
+    "deploy": "hardhat run scripts/deploy.ts --network galileo"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",

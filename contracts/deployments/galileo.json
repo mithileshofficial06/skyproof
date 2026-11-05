@@ -1,0 +1,8 @@
+{
+  "network": "galileo",
+  "chainId": 16602,
+  "DroneRegistry": "0xC3e0C4a5848c6b8754820286AF9805F6c4ca1Adf",
+  "FlightLog": "0x2E6F0f6f3121e3aA7984ffC292f80E75c937cBa5",
+  "admin": "0xa4BCd1E1C08626412C3E66c23fe8B4dAD8aD7c6e",
+  "deployedAt": "2026-11-05T20:09:29.030Z"
+}

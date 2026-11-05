@@ -67,15 +67,15 @@
 | # | Step | Status |
 |---|---|---|
 | 3.1 | Hash-chained, signed records (local file) | ✅ |
-| 3.2 | Encrypt records with a per-flight key (AES-256-GCM) | ⬜ |
-| 3.3 | Upload record batches to 0G Storage during the flight; keep root hashes | ⬜ |
-| 3.4 | Contract `DroneRegistry` (airframe, permit hash, allowed model + prompt) | ⬜ |
-| 3.5 | Contract `FlightLog` (`openFlight`, `anchor`, `closeFlight`) | ⬜ |
-| 3.6 | Deploy both on 0G Galileo; addresses in README | ⬜ |
-| 3.7 | Anchor the head hash + storage root on 0G Chain every 15 s | ⬜ |
-| 3.8 | Register the permit hash before take-off | ⬜ |
-| 3.9 | Replay script: rebuild a flight from 0G alone and check it against the anchors | ⬜ |
-| 3.10 | Tamper test: edit or delete one record → the check fails | ⬜ |
+| 3.2 | Encrypt records with a per-flight key (AES-256-GCM) | ✅ |
+| 3.3 | Upload record batches to 0G Storage during the flight; keep root hashes | ✅ (segments merge if 0G is slow) |
+| 3.4 | Contract `DroneRegistry` (airframe, permit hash, allowed model + prompt) | ✅ |
+| 3.5 | Contract `FlightLog` (`openFlight`, `anchor`, `closeFlight`) | ✅ 8/8 contract tests |
+| 3.6 | Deploy both on 0G Galileo; addresses in README | ✅ |
+| 3.7 | Anchor the head hash + storage root on 0G Chain every 15 s | ✅ (after each upload, ~30 s on testnet) |
+| 3.8 | Register the permit hash before take-off | ✅ `pnpm setup-chain`; `openFlight` rejects a wrong or expired permit |
+| 3.9 | Replay script: rebuild a flight from 0G alone and check it against the anchors | ✅ `pnpm replay <id>` |
+| 3.10 | Tamper test: edit or delete one record → the check fails | ✅ edit, delete, GPS rewrite, DENY→ALLOW all caught (8/8 unit tests) |
 
 ---
 
@@ -123,8 +123,8 @@
 | Requirement | Status |
 |---|---|
 | 0G call inside the decision loop | ✅ |
-| Episode log on 0G Storage with a request ID per decision | ⏳ Stage 3 |
-| Replayable simulation | ⏳ Stage 3 (replay) + Stage 5 (page) |
+| Episode log on 0G Storage with a request ID per decision | ✅ |
+| Replayable simulation | ✅ replay from 0G (web page in Stage 5) |
 | Safe stop without faking a decision | ✅ |
 
 ## How to run what exists today

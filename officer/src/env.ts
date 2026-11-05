@@ -15,3 +15,7 @@ export const env = {
   pcBase: process.env.ZG_PC_BASE_URL || "https://router-api.0g.ai/v1",
   visionModel: process.env.ZG_VISION_MODEL || "qwen3.8-flash",
 };
+
+for (const [name, url] of Object.entries({ ZG_RPC_URL: env.zgRpc, ZG_STORAGE_INDEXER: env.zgIndexer, ZG_PC_BASE_URL: env.pcBase })) {
+  if (!/^https?:\/\/[^\s=]+$/.test(url)) throw new Error(`${name} in .env is not a valid URL: "${url}"`);
+}
