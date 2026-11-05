@@ -41,3 +41,36 @@ export function checkHardRules(permit: Permit, cmd: Cmd, state: DroneState): { c
     return { code: "BATTERY", detail: `battery ${state.battery} too low to reach a rally point after this leg` };
   return { code: "OK", detail: "all hard rules pass" };
 }
+
+// ---- situation options -----------------------------------------------------------
+export type XYZ = [number, number, number];
+
+export interface SituationOption {
+  id: string;
+  label: string;
+  via: XYZ[]; // waypoints the drone would fly; empty = stay where it is (wait / hold / none)
+}
+
+export interface Situation {
+  kind: string;
+  detail: string;
+  options: SituationOption[];
+}
+
+/** Veto any option whose flight path breaks the permit. Returns the reason, or null if legal. */
+export function vetoOption(permit: Permit & { batteryPerMetre?: number }, opt: SituationOption, state: DroneState): string | null {
+  let from: XY = state.pos;
+  let length = 0;
+  for (const [x, y, alt] of opt.via) {
+    const pts = pathPoints(from, [x, y]);
+    if (outsideGeofence(permit, pts)) return "GEOFENCE: leaves the permitted area";
+    const nf = noFlyHit(permit, pts);
+    if (nf) return `NFZ: crosses no-fly zone ${nf}`;
+    if (alt > permit.altCeilingM) return `ALT: ${alt} m above ceiling ${permit.altCeilingM} m`;
+    length += Math.hypot(x - from[0], y - from[1]);
+    from = [x, y];
+  }
+  const need = permit.minBatteryReserve + (permit.batteryPerMetre ?? 0.03) * length;
+  if (opt.via.length && state.battery < need) return `BATTERY: needs ${need.toFixed(2)}, has ${state.battery}`;
+  return null;
+}

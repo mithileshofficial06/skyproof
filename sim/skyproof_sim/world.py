@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pybullet as p
 
+from .props import add_ground_label
+
 PERMIT_PATH = Path(__file__).resolve().parents[2] / "scenarios" / "permit.json"
 
 
@@ -36,8 +38,9 @@ class Pedestrian:
     SHIRT = [0.85, 0.15, 0.15, 1]
     PANTS = [0.15, 0.2, 0.45, 1]
 
-    def __init__(self, cid, xy):
+    def __init__(self, cid, xy, role: str = "pedestrian"):
         self.cid = cid
+        self.role = role
         self.parts = []
         x, y = xy
         s = 0.32  # scale: person ~0.58 m tall so the camera can resolve them
@@ -80,15 +83,21 @@ class World:
             # control tower in the middle of the airport
             _box(cid, [(min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2, 0.3], [0.08, 0.08, 0.3], [0.9, 0.9, 0.9, 1])
         for name, (x, y) in permit["dropZones"].items():
-            _box(cid, [x, y, 0.0015], [0.25, 0.25, 0.001], [0.95, 0.8, 0.1, 1], collide=False)
+            spots = permit.get("dropSpots", {}).get(name, {})
+            xs = [v[0] for v in spots.values()] or [x]
+            half_x = max(0.25, (max(xs) - min(xs)) / 2 + 0.2)
+            _box(cid, [x, y, 0.0015], [half_x, 0.25, 0.001], [0.95, 0.8, 0.1, 1], collide=False)
+            if len(spots) > 1:
+                for letter, xy in spots.items():
+                    add_ground_label(cid, xy, letter)
         for name, (x, y) in permit["rallyPoints"].items():
             _box(cid, [x, y, 0.0015], [0.12, 0.12, 0.001], [0.2, 0.45, 0.95, 1], collide=False)
         # A few buildings outside the flight corridor
-        for c, h in [((0.9, 3.6), 0.35), ((4.2, 1.6), 0.45), ((-0.2, 2.0), 0.25)]:
+        for c, h in [((0.9, 3.6), 0.35), ((4.2, 0.9), 0.45), ((-0.2, 2.0), 0.25)]:
             _box(cid, [c[0], c[1], h], [0.2, 0.2, h], [0.75, 0.68, 0.6, 1])
 
-    def add_pedestrian(self, xy) -> Pedestrian:
-        ped = Pedestrian(self.cid, xy)
+    def add_pedestrian(self, xy, role: str = "pedestrian") -> Pedestrian:
+        ped = Pedestrian(self.cid, xy, role)
         self.pedestrians.append(ped)
         return ped
 

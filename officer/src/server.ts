@@ -6,8 +6,8 @@ import { WebSocketServer, type WebSocket } from "ws";
 import { ethers } from "ethers";
 import { need } from "./env.js";
 import { loadPermit } from "./permit.js";
-import { checkHardRules, type Cmd, type DroneState } from "./rules.js";
-import { zgDecide, ZgUnreachable, PROMPT_HASH } from "./zg.js";
+import { checkHardRules, vetoOption, type Cmd, type DroneState, type Situation } from "./rules.js";
+import { zgDecide, zgChoose, ZgUnreachable, PROMPT_HASH } from "./zg.js";
 import { FlightRecorder } from "./record.js";
 
 const PORT = Number(process.env.OFFICER_PORT || 8787);
@@ -77,6 +77,54 @@ async function decide(s: Session, msg: any) {
   return { type: "decision", nonce: req.nonce, requestHash, verdict, code, reason, source, decisionHash: record.hash, zgRequestId: zg?.zgRequestId ?? null };
 }
 
+async function choose(s: Session, msg: any) {
+  const requestHash = "0x" + createHash("sha256").update(msg.body).digest("hex");
+  const req = JSON.parse(msg.body) as { nonce: string; situation: Situation; state: DroneState };
+  const { situation, state } = req;
+  const vetoed: { id: string; why: string }[] = [];
+  const legal = situation.options.filter((o) => {
+    const why = vetoOption(permit as any, o, state);
+    if (why) vetoed.push({ id: o.id, why });
+    return !why;
+  });
+
+  let verdict: "ALLOW" | "NO_DECISION" = "NO_DECISION";
+  let choice: string | null = null;
+  let reason = "";
+  let source = "NONE";
+  let zg: any = null;
+  if (legal.length === 0) {
+    reason = "every option breaks the permit";
+  } else {
+    try {
+      zg = await zgChoose(situation.kind, situation.detail, legal, state, msg.frame, s.netDown);
+      if (zg.choice) [verdict, choice, reason, source] = ["ALLOW", zg.choice, zg.reason, "0G"];
+      else reason = `0G answer was not one of the legal options (${zg.reason})`;
+    } catch (e) {
+      if (!(e instanceof ZgUnreachable)) throw e;
+      reason = (e as Error).message;
+    }
+  }
+
+  const frameHash = msg.frame ? "0x" + createHash("sha256").update(msg.frame).digest("hex") : null;
+  const record = s.rec.append("DECISION", {
+    kind: "SITUATION",
+    nonce: req.nonce,
+    requestHash,
+    request: req,
+    frameHash,
+    legal: legal.map((o) => o.id),
+    vetoed,
+    verdict,
+    choice,
+    reason,
+    source,
+    zg: zg && { requestId: zg.zgRequestId, provider: zg.provider, model: zg.model, latencyMs: zg.latencyMs, promptHash: zg.promptHash },
+  });
+  log(`${situation.kind.padEnd(17)} -> ${(choice ?? verdict).padEnd(12)} [${source}] ${zg?.zgRequestId ?? ""} ${zg ? zg.latencyMs + "ms" : ""} ${reason}${vetoed.length ? `  (vetoed: ${vetoed.map((v) => v.id).join(", ")})` : ""}`);
+  return { type: "choice", nonce: req.nonce, requestHash, verdict, choice, code: choice ?? "NO_DECISION", reason, source, vetoed, legal: legal.map((o) => o.id), decisionHash: record.hash, zgRequestId: zg?.zgRequestId ?? null };
+}
+
 const wss = new WebSocketServer({ port: PORT });
 wss.on("connection", (ws: WebSocket) => {
   let s: Session | null = null;
@@ -95,6 +143,9 @@ wss.on("connection", (ws: WebSocket) => {
         case "request":
           ws.send(JSON.stringify(await decide(s!, msg)));
           break;
+        case "situation":
+          ws.send(JSON.stringify(await choose(s!, msg)));
+          break;
         case "telemetry":
           s!.samples.push(msg.state);
           if (Date.now() - s!.lastBatch >= STATE_BATCH_MS) flushState(s!);
@@ -102,7 +153,7 @@ wss.on("connection", (ws: WebSocket) => {
         case "action":
           flushState(s!);
           s!.rec.append("ACTION", { cmd: msg.cmd, decisionHash: msg.decisionHash ?? null, state: msg.state });
-          log(`ACTION  ${msg.cmd.type} executed${msg.decisionHash ? "" : "  ** WITHOUT an approved decision **"}`);
+          log(`ACTION  ${msg.cmd.type}${msg.cmd.choice ? " " + msg.cmd.choice : ""} executed${msg.decisionHash ? "" : "  ** WITHOUT an approved decision **"}`);
           break;
         case "safe_stop":
           flushState(s!);

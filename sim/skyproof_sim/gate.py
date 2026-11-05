@@ -42,3 +42,11 @@ class Gate:
             return False, f"{decision.get('verdict')} {decision.get('code')}"
         self.used_nonces.add(nonce)
         return True, "ALLOW"
+
+
+def make_situation(kind: str, detail: str, options: list[dict], state: dict) -> tuple[str, str, str]:
+    """Like make_request, for an in-flight situation with a menu of options."""
+    nonce = uuid.uuid4().hex[:16]
+    req = {"nonce": nonce, "situation": {"kind": kind, "detail": detail, "options": options}, "state": state}
+    body = json.dumps(req, sort_keys=True, separators=(",", ":"))
+    return nonce, body, "0x" + hashlib.sha256(body.encode()).hexdigest()

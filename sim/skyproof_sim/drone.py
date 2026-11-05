@@ -120,10 +120,14 @@ class Drone:
 
     # ---- camera --------------------------------------------------------------
     def camera_png_b64(self, look_at_xy=None, w=320, h=240) -> str:
-        """A camera under the drone, tilted toward `look_at_xy` (default: straight down)."""
+        """A camera under the drone, aimed at `look_at_xy` ([x, y] on the ground or [x, y, z])."""
         x, y, z = self.pos.tolist()
-        tx, ty = look_at_xy if look_at_xy is not None else (x + 0.001, y)
-        view = p.computeViewMatrix([x, y, z - 0.04], [tx, ty, 0.0], [0, 0, 1] if look_at_xy is not None else [1, 0, 0],
+        if look_at_xy is None:
+            tx, ty, tz = x + 0.001, y, 0.0
+        else:
+            tx, ty = look_at_xy[0], look_at_xy[1]
+            tz = look_at_xy[2] if len(look_at_xy) > 2 else 0.0
+        view = p.computeViewMatrix([x, y, z - 0.04], [tx, ty, tz], [0, 0, 1] if look_at_xy is not None else [1, 0, 0],
                                    physicsClientId=self.cid)
         proj = p.computeProjectionMatrixFOV(fov=75, aspect=w / h, nearVal=0.02, farVal=30, physicsClientId=self.cid)
         _, _, rgba, _, _ = p.getCameraImage(w, h, view, proj, renderer=p.ER_TINY_RENDERER, physicsClientId=self.cid)
