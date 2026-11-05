@@ -1,0 +1,23 @@
+{
+  "name": "skyproof-officer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "d4": "tsx src/tests/d4-storage.ts",
+    "officer": "tsx src/server.ts",
+    "test": "tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@0gfoundation/0g-storage-ts-sdk": "^1.2.13",
+    "@noble/hashes": "^2.4.0",
+    "dotenv": "^18.0.9",
+    "ethers": "^6.17.0",
+    "ws": "^8.22.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/ws": "^8.18.2",
+    "tsx": "^4.23.15",
+    "typescript": "~5.8.3"
+  }
+}
