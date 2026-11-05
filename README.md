@@ -13,7 +13,7 @@ ETHGlobal Mumbai, Nov 5–7 2026 · 0G Physical AI · Arc Advanced Stablecoin Lo
 ## Layout
 | Folder | What | Stack |
 |---|---|---|
-| `sim/` | PyBullet drone, city, scenarios | Python 3.10, gym-pybullet-drones |
+| `sim/` | PyBullet drone, city, scenarios | Python 3.12, gym-pybullet-drones |
 | `officer/` | Gate, 0G calls, record chain, Storage upload | TypeScript (Node) |
 | `contracts/` | DroneRegistry, FlightLog on 0G Galileo | Solidity, Foundry |
 | `cre/` | Verdict workflow | TypeScript, Bun, CRE CLI |

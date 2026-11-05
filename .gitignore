@@ -29,3 +29,6 @@ sim/results/
 Thumbs.db
 .vscode/*
 !.vscode/extensions.json
+
+# third-party clones
+sim/third_party/

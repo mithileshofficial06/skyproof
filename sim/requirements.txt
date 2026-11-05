@@ -1,6 +1,13 @@
-# Python 3.10 only (PyBullet has no Windows wheels; compiled with MSVC Build Tools)
+# Python 3.12. PyBullet has no Windows wheels: it compiles from source
+# (needs Microsoft C++ Build Tools with the Windows SDK).
 pybullet==3.2.7
-gym-pybullet-drones @ git+https://github.com/learnsyslab/gym-pybullet-drones.git
 numpy
-pillow          # save camera frames
+scipy
+gymnasium
+pillow
+transforms3d
 websockets      # bridge to the TypeScript officer service
+# gym-pybullet-drones is installed from a local clone without its RL extras
+# (torch / stable-baselines3 are not needed):
+#   git clone --depth 1 https://github.com/learnsyslab/gym-pybullet-drones.git third_party/gym-pybullet-drones
+#   pip install --no-deps -e third_party/gym-pybullet-drones

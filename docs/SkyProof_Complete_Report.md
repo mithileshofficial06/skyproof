@@ -124,7 +124,7 @@ The 0G sponsor team said the earlier pitch looked like a solution in search of a
 
 ## 5. Component specifications
 
-### 5.1 Simulator (`sim/`, Python 3.10)
+### 5.1 Simulator (`sim/`, Python 3.12)
 - **Engine:** PyBullet with `gym-pybullet-drones` (Crazyflie model, PID waypoint control). 0G's prize page lists PyBullet as an accepted simulator.
 - **World:** a scaled city block with a no-fly polygon (airport), the permit geofence, two drop zones, rally points, and pedestrians that can be placed in drop zones.
 - **Wind:** `applyExternalForce` gusts, seeded.
@@ -409,7 +409,7 @@ Prepare a backup recording before judging.
 ## 14. Technology stack
 | Area | Choice |
 |---|---|
-| Simulator | Python 3.10, PyBullet 3.2.7, gym-pybullet-drones |
+| Simulator | Python 3.12, PyBullet 3.2.7, gym-pybullet-drones (no RL extras) |
 | Person detector | YOLOv8n (optional; a simulated ground-truth check is the fallback) |
 | Officer service | Node.js 24, TypeScript, OpenAI-compatible client to 0G Private Computer |
 | 0G Storage | 0G TypeScript storage SDK |
@@ -422,7 +422,7 @@ Prepare a backup recording before judging.
 
 ## 15. Repository layout (`D:\SkyProof`)
 ```
-sim/         PyBullet world, scenarios, camera, bridge   (Python 3.10, .venv)
+sim/         PyBullet world, scenarios, camera, bridge   (Python 3.12, .venv)
 officer/     gate logic, 0G client, record chain, Storage upload (TS)
 contracts/   DroneRegistry, FlightLog on 0G Galileo
 cre/         Chainlink verdict workflow (TS + Bun)
@@ -435,9 +435,9 @@ docs/        this report, research, build report
 | Item | Status |
 |---|---|
 | Repo created and skeleton pushed | ✅ |
-| Python 3.10 + `sim/.venv` | ✅ |
-| Microsoft C++ Build Tools (needed to compile PyBullet) | ⏳ installing |
-| PyBullet + gym-pybullet-drones | ⏳ after Build Tools |
+| Python 3.12 + `sim/.venv` | ✅ |
+| Microsoft C++ Build Tools + Windows SDK (to compile PyBullet) | ✅ |
+| PyBullet + gym-pybullet-drones; D3 test flight | ✅ D3 PASS (4 cm error, 320×240 frame) |
 | Foundry | ❌ installer blocked by permissions; install manually or use Hardhat |
 | CRE CLI | ☐ install from the CRE docs |
 | Credentials (0G API key + credits, Arc Studio, CRE, wallets, faucets) | ☐ teammate collecting |
