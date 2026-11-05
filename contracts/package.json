@@ -1,0 +1,17 @@
+{
+  "name": "skyproof-contracts",
+  "private": true,
+  "scripts": {
+    "build": "hardhat compile",
+    "test": "hardhat test",
+    "d5": "hardhat run scripts/d5-deploy-ping.ts --network galileo"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/node": "^26.6.6",
+    "dotenv": "^18.0.9",
+    "hardhat": "^2.29.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
