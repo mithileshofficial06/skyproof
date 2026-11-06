@@ -13,7 +13,7 @@ flowchart TB
     RUN["CRE auto-runner<br/>watches Arc · runs judge"]
   end
   subgraph ZG["0G"]
-    PC["Private Computer<br/>qwen3.8-flash vision"]
+    PC["Private Computer<br/>0gm-1.0-35b-a3b vision<br/>TEE: Intel TDX · sealed"]
     ST[("Storage<br/>AES-256-GCM segments")]
     CH["Chain (Galileo)<br/>DroneRegistry · FlightLog"]
   end
@@ -115,7 +115,7 @@ sequenceDiagram
 |---|---|---|
 | Operator / officer | running the flight, holding the decryption key | the record content: hash chain + signature + 0G Chain anchors |
 | Evidence server | availability | which flight (verified on 0G Chain) and the record (verified per record); withholding = B5 |
-| 0G Private Computer | the decision itself (receipt = request id) | (not TEE-attested; see limitations) |
+| 0G Private Computer | the decision itself (receipt = request id) | provider is TEE-attested (TDX, dstack) and the channel sealed, both recorded; per-response enclave signatures not yet re-verified |
 | CRE workflow | rules + consensus | — |
 | CRE forwarder | delivering the report | escrow accepts only the forwarder |
 | Insurer | held claims only | cannot undo automatic payouts; reason is public |

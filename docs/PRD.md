@@ -100,5 +100,5 @@ Delivery drones already make safety decisions by themselves: whether it is safe 
 |---|---|
 | Wi-Fi drop during the demo | Safe stop by design; phone hotspot; recorded flights work without the laptop |
 | Operator bond runs out | Top up before judging; drone shows "inactive" clearly when it does |
-| 0G compute not TEE-attested | Stated openly; next step: serving-broker `processResponse()` verification |
+| TEE proof is provider-level, not per response | Decisions use a TEE-attested model (TDX, dstack) over a sealed channel, recorded per decision; next step: verify each response's enclave signature |
 | CRE not on a DON | Simulation with real broadcast writes (allowed by the track); stated openly |

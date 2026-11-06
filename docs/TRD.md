@@ -21,7 +21,7 @@ Related: [PRD](PRD.md) · [Architecture](Architecture.md) · [Deployments](Deplo
 
 | Dependency | Endpoint | Used for |
 |---|---|---|
-| 0G Private Computer | `https://router-api.0g.ai/v1`, model `qwen3.8-flash` (vision) | decisions |
+| 0G Private Computer | `https://router-api.0g.ai/v1`, model `0gm-1.0-35b-a3b` (vision, **TEE-attested: TeeML, Intel TDX, verifier dstack**; responses `x-0g-e2ee: sealed`; thinking off via `chat_template_kwargs`) | decisions |
 | 0G Storage | indexer `https://indexer-storage-testnet-turbo.0g.ai`, `@0gfoundation/0g-storage-ts-sdk` | encrypted record segments, evidence, insurer reasons |
 | 0G Chain | `https://evmrpc-testnet.0g.ai` (chain 16602) | registry, flight anchors |
 | Arc Testnet | `https://rpc.testnet.arc.network` (chain 5042002) | escrow, USDC |
@@ -39,7 +39,7 @@ The simulator sends the officer `{type: "request", body, frame}`:
 ### 3.2 Officer pipeline (`decide()` / `choose()` in `officer/src/server.ts`)
 1. `requestHash = sha256(body)`.
 2. Permit hard rules (`officer/src/rules.ts`): geofence, no-fly polygons, altitude ceiling, wind limit, battery reserve. Illegal → DENY (source `HARD_RULES`), or vetoed options for situations.
-3. 0G call (`officer/src/zg.ts`): image + prompt → ALLOW/DENY or an option id; timeout 8 s. Recorded: `requestId`, `provider`, `model`, `latencyMs`, `promptHash`, `frameHash`.
+3. 0G call (`officer/src/zg.ts`): image + prompt → ALLOW/DENY or an option id; timeout 8 s. Recorded: `requestId`, `provider`, `model`, `latencyMs`, `promptHash`, `frameHash`, `e2ee` (the `x-0g-e2ee` header, `sealed`) and `tee` (`attested`, `verifiability`, `teeType`, `verifier` from 0G's model registry). The officer refuses to start if its model is not the permit's `visionModel`.
 4. Local detector: may turn ALLOW into DENY (source `0G+DETECTOR`), never the reverse.
 5. 0G unreachable → `NO_DECISION ZG_UNREACHABLE`, source `NONE`. Never a made-up answer.
 6. A `DECISION` record is appended; the reply carries `{nonce, requestHash, verdict, decisionHash, zgRequestId}`.

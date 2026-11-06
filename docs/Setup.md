@@ -34,7 +34,7 @@ copy cre\judge\.env.example cre\judge\.env
 ```
 | Variable (`.env`) | What |
 |---|---|
-| `ZG_PC_API_KEY`, `ZG_PC_BASE_URL`, `ZG_VISION_MODEL` | 0G Private Computer key, router, model (`qwen3.8-flash`) |
+| `ZG_PC_API_KEY`, `ZG_PC_BASE_URL`, `ZG_VISION_MODEL` | 0G Private Computer key, router, model (`0gm-1.0-35b-a3b`, TEE-attested; must equal `visionModel` in `scenarios/permit.json`) |
 | `ZG_RPC_URL`, `ZG_CHAIN_ID`, `ZG_STORAGE_INDEXER` | 0G Galileo RPC (16602) and storage indexer |
 | `DEPLOYER_PRIVATE_KEY` | owner/insurer (0G admin + Arc owner) |
 | `OPERATOR_PRIVATE_KEY` | signs records; needs 0G testnet gas and Arc USDC for the bond |

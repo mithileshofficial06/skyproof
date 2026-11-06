@@ -82,6 +82,8 @@ export interface FlightEvent {
   status: "ok" | "deny" | "warn" | "info" | "breach";
   source?: string;
   zgRequestId?: string | null;
+  /** where 0G ran this decision: TEE attestation of the provider + how the call was carried (x-0g-e2ee) */
+  tee?: { attested: boolean; teeType: string | null; verifier: string | null; e2ee: string | null } | null;
   options?: { id: string; label: string; vetoed?: string; chosen?: boolean }[];
   latencyMs?: number;
   hash: string;
@@ -198,7 +200,7 @@ export function buildTimeline(f: FlightFile): Timeline {
       events.push({
         t, seq: r.seq, kind: "situation", hash: r.hash,
         title: `${SITUATION_TITLES[sit.kind] ?? sit.kind} → ${b.choice ?? "no decision"}`,
-        detail: b.reason, status: b.choice ? "ok" : "warn", source: b.source, zgRequestId: b.zg?.requestId ?? null, latencyMs: b.zg?.latencyMs,
+        detail: b.reason, status: b.choice ? "ok" : "warn", source: b.source, zgRequestId: b.zg?.requestId ?? null, latencyMs: b.zg?.latencyMs, tee: b.zg?.tee ? { attested: !!b.zg.tee.attested, teeType: b.zg.tee.teeType ?? null, verifier: b.zg.tee.verifier ?? null, e2ee: b.zg.e2ee ?? null } : null,
         options: sit.options.map((o: any) => ({ id: o.id, label: o.label, vetoed: vetoed[o.id], chosen: o.id === b.choice })),
       });
     } else if (r.type === "DECISION") {
@@ -207,7 +209,7 @@ export function buildTimeline(f: FlightFile): Timeline {
         t, seq: r.seq, kind: "decision", hash: r.hash,
         title: `${cmd.type} → ${b.verdict}${b.code && b.code !== "OK" ? ` ${b.code}` : ""}`,
         detail: b.reason, status: b.verdict === "ALLOW" ? "ok" : b.verdict === "DENY" ? "deny" : "warn",
-        source: b.source, zgRequestId: b.zg?.requestId ?? null, latencyMs: b.zg?.latencyMs,
+        source: b.source, zgRequestId: b.zg?.requestId ?? null, latencyMs: b.zg?.latencyMs, tee: b.zg?.tee ? { attested: !!b.zg.tee.attested, teeType: b.zg.tee.teeType ?? null, verifier: b.zg.tee.verifier ?? null, e2ee: b.zg.e2ee ?? null } : null,
       });
     } else if (r.type === "ACTION") {
       const approved = !!b.decisionHash;

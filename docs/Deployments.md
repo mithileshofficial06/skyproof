@@ -12,7 +12,7 @@ All contracts are on public testnets and can be opened in the explorers.
 Deployed 2026-11-05 (`contracts/deployments/galileo.json`). Admin `0xa4BCd1E1C08626412C3E66c23fe8B4dAD8aD7c6e`. Operator (signs records, pays 0G gas) [`0x69A5160E8bf27A2a9D8d17eaff0De079CfdFA12A`](https://chainscan-galileo.0g.ai/address/0x69A5160E8bf27A2a9D8d17eaff0De079CfdFA12A).
 
 0G Storage: indexer `https://indexer-storage-testnet-turbo.0g.ai`, explorer https://storagescan-galileo.0g.ai (search a root hash).
-0G Private Computer: router `https://router-api.0g.ai/v1`, model `qwen3.8-flash`; calls listed on pc.0g.ai → Console → Activity (key "Skyproof").
+0G Private Computer: router `https://router-api.0g.ai/v1`, model `0gm-1.0-35b-a3b` (TEE-attested: TeeML, Intel TDX, verifier dstack; sealed channel). Permit + model registered on 0G Chain 7 Nov: [setPermit](https://chainscan-galileo.0g.ai/tx/0xa8ed9b1de8de59f2790400b5643bbcff9c966f5e8fd539e9296bdd8a101d7dc5), [allow model + decision prompt](https://chainscan-galileo.0g.ai/tx/0x64986f5d8d6087817089c85ca0d5990881f3ab2a3e93d499be832accce61bb80), [allow model + situation prompt](https://chainscan-galileo.0g.ai/tx/0x14e3bd68ebf3a218eb7bb9511d05790197a8aeea85ad28e8b6c7a29ca0786951); calls listed on pc.0g.ai → Console → Activity (key "Skyproof").
 
 ## Arc Testnet (chain 5042002) · explorer https://testnet.arcscan.app
 

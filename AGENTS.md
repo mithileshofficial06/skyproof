@@ -19,7 +19,7 @@ SkyProof is a black box for delivery drones. A PyBullet drone (`sim/`) asks the 
 3. **Judge independence:** the CRE workflow must verify data (hash chain, signatures, 0G Chain anchors) and treat missing/withheld records as breach B5. Keep `rules.ts` pure and tested; add a test for every rule change.
 4. **Escrow:** only the CRE forwarder may deliver verdicts; the insurer may act only on held claims.
 5. **Remote control surface:** website-started flights use a fixed scenario allowlist and `spawn` with an argument array. Never pass user input to a shell.
-6. **Honesty in docs and UI:** don't claim TEE attestation, DON deployment or real hardware. Keep the known-limitations lists accurate.
+6. **Honesty in docs and UI:** don't claim per-response TEE signature verification (only provider attestation + sealed channel are recorded), DON deployment or real hardware. Keep the known-limitations lists accurate.
 7. **UI text:** plain language for victims and insurers; no emojis; technical details behind a closed "Technical details" section.
 
 ## Conventions

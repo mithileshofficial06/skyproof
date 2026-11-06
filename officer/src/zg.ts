@@ -1,7 +1,32 @@
 // The 0G decision: one call to the vision model on 0G Private Computer per mission command.
+// The model (0gm-1.0-35b-a3b) is served by a TEE-attested provider (Intel TDX, verified by dstack) over a
+// sealed, end-to-end encrypted channel; both facts are recorded with every decision.
 import { createHash } from "node:crypto";
 import { env, need } from "./env.js";
 import type { Cmd, DroneState } from "./rules.js";
+
+/** What 0G says about where the model runs (from the router's model list) and how this call was carried. */
+export interface ZgTee {
+  attested: boolean;
+  verifiability: string | null; // e.g. TeeML
+  teeType: string | null; // e.g. TDX
+  verifier: string | null; // e.g. dstack
+}
+let teeCache: { model: string; tee: ZgTee | null } | null = null;
+/** Looked up once per model from GET /models; null if the router does not report TEE details. */
+export async function teeInfo(model = env.visionModel): Promise<ZgTee | null> {
+  if (teeCache?.model === model) return teeCache.tee;
+  try {
+    const r = await fetch(`${env.pcBase}/models`, { headers: { Authorization: `Bearer ${need("ZG_PC_API_KEY")}` }, signal: AbortSignal.timeout(10_000) });
+    const b: any = await r.json();
+    const m = (b.data ?? b).find((x: any) => x.id === model);
+    const tee: ZgTee | null = m ? { attested: m.tee_attested === true, verifiability: m.verifiability ?? null, teeType: m.tee_type ?? null, verifier: m.tee_verifier ?? null } : null;
+    teeCache = { model, tee };
+    return tee;
+  } catch {
+    return null; // not cached: try again next time
+  }
+}
 
 export interface ZgDecision {
   verdict: "ALLOW" | "DENY";
@@ -12,6 +37,9 @@ export interface ZgDecision {
   model: string;
   latencyMs: number;
   promptHash: string;
+  /** x-0g-e2ee header of this response: "sealed" = end-to-end encrypted to the enclave */
+  e2ee: string | null;
+  tee: ZgTee | null;
 }
 
 const SYSTEM = [
@@ -52,6 +80,7 @@ export async function zgDecide(cmd: Cmd, state: DroneState, frameB64: string | u
         temperature: 0,
         max_tokens: 80,
         enable_thinking: false,
+        chat_template_kwargs: { enable_thinking: false }, // answer directly, no reasoning tokens
         messages: [{ role: "system", content: SYSTEM }, { role: "user", content }],
       }),
     });
@@ -79,6 +108,8 @@ export async function zgDecide(cmd: Cmd, state: DroneState, frameB64: string | u
     model: body.model ?? env.visionModel,
     latencyMs: Math.round(performance.now() - t0),
     promptHash: PROMPT_HASH,
+    e2ee: res.headers.get("x-0g-e2ee"),
+    tee: await teeInfo(),
   };
 }
 
@@ -103,6 +134,8 @@ export interface ZgChoice {
   model: string;
   latencyMs: number;
   promptHash: string;
+  e2ee: string | null;
+  tee: ZgTee | null;
 }
 
 export async function zgChoose(kind: string, detail: string, options: SituationOption[], state: DroneState, frameB64: string | undefined, netDown: boolean, timeoutMs = 8000): Promise<ZgChoice> {
@@ -119,7 +152,7 @@ export async function zgChoose(kind: string, detail: string, options: SituationO
       signal: AbortSignal.timeout(timeoutMs),
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify({
-        model: env.visionModel, temperature: 0, max_tokens: 80, enable_thinking: false,
+        model: env.visionModel, temperature: 0, max_tokens: 80, enable_thinking: false, chat_template_kwargs: { enable_thinking: false },
         messages: [{ role: "system", content: SITUATION_SYSTEM }, { role: "user", content }],
       }),
     });
@@ -144,5 +177,7 @@ export async function zgChoose(kind: string, detail: string, options: SituationO
     model: body.model ?? env.visionModel,
     latencyMs: Math.round(performance.now() - t0),
     promptHash: SITUATION_PROMPT_HASH,
+    e2ee: res.headers.get("x-0g-e2ee"),
+    tee: await teeInfo(),
   };
 }

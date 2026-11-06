@@ -66,7 +66,7 @@ if (deleteOne) {
   }
 }
 
-const report = verifyFlight(records, anchors, f.operator, reg.permitHash);
+const report = verifyFlight(records, anchors, f.operator, f.permitHash); // the permit this flight opened under
 console.log(`\nrecord: ${report.records} records, ${report.decisions.length} decisions, ${report.actions} actions, ${report.safeStops} safe-stop steps`);
 console.log(report.ok ? "integrity: ✅ intact, every 0G Chain anchor matches" : "integrity: ❌ BROKEN");
 for (const i of report.issues) console.log(`  ❌ ${i}`);

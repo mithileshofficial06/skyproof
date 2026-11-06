@@ -52,8 +52,8 @@ for (const f of readdirSync(`${TMP}flights`).filter((f) => f.endsWith(".manifest
       const blob = await storageDownload(a.storageRoot, `${TMP}dl/web-${m.flightId}-${i}.bin`);
       records.push(...JSON.parse(decryptSegment(key, segmentAad(m.chainFlightId, i), blob)).records);
     }
-    const reg = await registry.airframes(airframeKey(m.airframeId));
-    const report = verifyFlight(records, anchors, fl.operator, reg.permitHash);
+    // the permit FlightLog checked when this flight opened (the registry's permit may have changed since)
+    const report = verifyFlight(records, anchors, fl.operator, fl.permitHash);
     const scenario = (records[0]?.body as any)?.scenario ?? "unknown";
     const out = {
       flightId: m.flightId,

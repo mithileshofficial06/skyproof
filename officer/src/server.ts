@@ -6,10 +6,10 @@ import { createHash, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { WebSocketServer, type WebSocket } from "ws";
 import { ethers } from "ethers";
-import { need } from "./env.js";
+import { env, need } from "./env.js";
 import { loadPermit } from "./permit.js";
 import { checkHardRules, vetoOption, type Cmd, type DroneState, type Situation } from "./rules.js";
-import { zgDecide, zgChoose, ZgUnreachable, PROMPT_HASH, SITUATION_PROMPT_HASH } from "./zg.js";
+import { zgDecide, zgChoose, ZgUnreachable, PROMPT_HASH, SITUATION_PROMPT_HASH, teeInfo } from "./zg.js";
 import { FlightRecorder } from "./record.js";
 import { FlightSealer } from "./sealer.js";
 import { operatorWallet, loadDeployment } from "./chain.js";
@@ -23,6 +23,8 @@ const PORT = Number(process.env.OFFICER_PORT || 8787);
 const STATE_BATCH_MS = 5000;
 
 const { permit, permitHash } = loadPermit();
+// the permit names the one 0G model allowed to decide; refuse to fly with any other
+if (permit.visionModel !== env.visionModel) throw new Error(`model ${env.visionModel} is not the permit's model ${permit.visionModel}: update scenarios/permit.json and run pnpm setup-chain`);
 const signer = operatorWallet(); // signs records; the same key anchors them on 0G Chain
 const ONCHAIN = process.env.SKYPROOF_ONCHAIN !== "0" && loadDeployment() !== null;
 
@@ -83,10 +85,10 @@ async function decide(s: Session, msg: any) {
     code,
     reason,
     source,
-    zg: zg && { requestId: zg.zgRequestId, provider: zg.provider, model: zg.model, latencyMs: zg.latencyMs, promptHash: PROMPT_HASH },
+    zg: zg && { requestId: zg.zgRequestId, provider: zg.provider, model: zg.model, latencyMs: zg.latencyMs, promptHash: PROMPT_HASH, e2ee: zg.e2ee, tee: zg.tee },
   });
   log(`${cmd.type.padEnd(7)} -> ${verdict.padEnd(11)} ${code.padEnd(14)} [${source}] ${zg?.zgRequestId ?? ""} ${zg ? zg.latencyMs + "ms" : ""} ${reason}`);
-  return { type: "decision", nonce: req.nonce, requestHash, verdict, code, reason, source, decisionHash: record.hash, zgRequestId: zg?.zgRequestId ?? null, recordSeq: record.seq, latencyMs: zg?.latencyMs ?? null };
+  return { type: "decision", nonce: req.nonce, requestHash, verdict, code, reason, source, decisionHash: record.hash, zgRequestId: zg?.zgRequestId ?? null, recordSeq: record.seq, latencyMs: zg?.latencyMs ?? null, tee: zg?.tee ?? null, e2ee: zg?.e2ee ?? null };
 }
 
 async function choose(s: Session, msg: any) {
@@ -131,10 +133,10 @@ async function choose(s: Session, msg: any) {
     choice,
     reason,
     source,
-    zg: zg && { requestId: zg.zgRequestId, provider: zg.provider, model: zg.model, latencyMs: zg.latencyMs, promptHash: zg.promptHash },
+    zg: zg && { requestId: zg.zgRequestId, provider: zg.provider, model: zg.model, latencyMs: zg.latencyMs, promptHash: zg.promptHash, e2ee: zg.e2ee, tee: zg.tee },
   });
   log(`${situation.kind.padEnd(17)} -> ${(choice ?? verdict).padEnd(12)} [${source}] ${zg?.zgRequestId ?? ""} ${zg ? zg.latencyMs + "ms" : ""} ${reason}${vetoed.length ? `  (vetoed: ${vetoed.map((v) => v.id).join(", ")})` : ""}`);
-  return { type: "choice", nonce: req.nonce, requestHash, verdict, choice, code: choice ?? "NO_DECISION", reason, source, vetoed, legal: legal.map((o) => o.id), decisionHash: record.hash, zgRequestId: zg?.zgRequestId ?? null , recordSeq: record.seq, latencyMs: zg?.latencyMs ?? null };
+  return { type: "choice", nonce: req.nonce, requestHash, verdict, choice, code: choice ?? "NO_DECISION", reason, source, vetoed, legal: legal.map((o) => o.id), decisionHash: record.hash, zgRequestId: zg?.zgRequestId ?? null, recordSeq: record.seq, latencyMs: zg?.latencyMs ?? null, tee: zg?.tee ?? null, e2ee: zg?.e2ee ?? null };
 }
 
 // Live watchers (the web mission console). They see everything the recorder sees.
@@ -197,7 +199,7 @@ wss.on("connection", (ws: WebSocket) => {
           drone = true;
           const flightId = `${permit.airframeId}-${msg.scenario}-${Date.now()}`;
           s = { rec: new FlightRecorder(flightId, signer), sealer: null, netDown: false, samples: [], lastBatch: Date.now(), lastKept: -1 };
-          s.rec.append("PERMIT", { permitHash, permit, signer: signer.address, visionModel: process.env.ZG_VISION_MODEL, promptHash: PROMPT_HASH, situationPromptHash: SITUATION_PROMPT_HASH, scenario: msg.scenario });
+          s.rec.append("PERMIT", { permitHash, permit, signer: signer.address, visionModel: env.visionModel, promptHash: PROMPT_HASH, situationPromptHash: SITUATION_PROMPT_HASH, scenario: msg.scenario });
           if (ONCHAIN) {
             s.sealer = new FlightSealer(s.rec, permit.airframeId, permitHash, log);
             s.sealer.onOpen = (openTx) => broadcast({ type: "opened", flightId, openTx });
@@ -288,4 +290,5 @@ wss.on("connection", (ws: WebSocket) => {
     }
   });
 });
-log(`officer listening on ws://localhost:${PORT}  model ${process.env.ZG_VISION_MODEL}  permit ${permitHash.slice(0, 18)}  0G sealing ${ONCHAIN ? "ON" : "OFF"}  operator ${signer.address}`);
+void teeInfo().then((t) => log(`0G model ${env.visionModel}: ${t?.attested ? `TEE-attested (${t.verifiability}, ${t.teeType}, verifier ${t.verifier})` : "not TEE-attested"}`));
+log(`officer listening on ws://localhost:${PORT}  model ${env.visionModel}  permit ${permitHash.slice(0, 18)}  0G sealing ${ONCHAIN ? "ON" : "OFF"}  operator ${signer.address}`);

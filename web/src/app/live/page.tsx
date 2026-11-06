@@ -161,7 +161,7 @@ export default function Live() {
             break;
           case "decision": {
             const cmd = m.request.cmd;
-            push({ kind: "decision", title: `${cmd.type} → ${m.verdict}${m.code && m.code !== "OK" ? ` ${m.code}` : ""}`, detail: m.reason, status: m.verdict === "ALLOW" ? "ok" : m.verdict === "DENY" ? "deny" : "warn", source: m.source, zgRequestId: m.zgRequestId, recordSeq: m.recordSeq, latencyMs: m.latencyMs ?? undefined });
+            push({ kind: "decision", title: `${cmd.type} → ${m.verdict}${m.code && m.code !== "OK" ? ` ${m.code}` : ""}`, detail: m.reason, status: m.verdict === "ALLOW" ? "ok" : m.verdict === "DENY" ? "deny" : "warn", source: m.source, zgRequestId: m.zgRequestId, recordSeq: m.recordSeq, latencyMs: m.latencyMs ?? undefined, tee: m.tee ? { attested: !!m.tee.attested, teeType: m.tee.teeType ?? null, verifier: m.tee.verifier ?? null, e2ee: m.e2ee ?? null } : null });
             if (m.frame) setFrame({ src: `data:image/jpeg;base64,${m.frame}`, label: `${cmd.type} · ${m.verdict}` });
             break;
           }
@@ -169,7 +169,7 @@ export default function Live() {
             const sit = m.request.situation;
             const vetoed: Record<string, string> = Object.fromEntries((m.vetoed ?? []).map((v: { id: string; why: string }) => [v.id, v.why]));
             push({
-              kind: "situation", title: `${TITLES[sit.kind] ?? sit.kind} → ${m.choice ?? "no decision"}`, detail: m.reason, status: m.choice ? "ok" : "warn", source: m.source, zgRequestId: m.zgRequestId, recordSeq: m.recordSeq, latencyMs: m.latencyMs ?? undefined,
+              kind: "situation", title: `${TITLES[sit.kind] ?? sit.kind} → ${m.choice ?? "no decision"}`, detail: m.reason, status: m.choice ? "ok" : "warn", source: m.source, zgRequestId: m.zgRequestId, recordSeq: m.recordSeq, latencyMs: m.latencyMs ?? undefined, tee: m.tee ? { attested: !!m.tee.attested, teeType: m.tee.teeType ?? null, verifier: m.tee.verifier ?? null, e2ee: m.e2ee ?? null } : null,
               options: sit.options.map((o: { id: string; label: string }) => ({ id: o.id, label: o.label, vetoed: vetoed[o.id], chosen: o.id === m.choice })),
             });
             if (m.frame) setFrame({ src: `data:image/jpeg;base64,${m.frame}`, label: `${sit.kind} · ${m.choice ?? "no decision"}` });

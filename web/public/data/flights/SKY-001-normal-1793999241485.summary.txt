@@ -1,0 +1,111 @@
+================================================================================================
+SKYPROOF FLIGHT SUMMARY (plain English)
+================================================================================================
+Flight ID      : SKY-001-normal-1793999241485
+Drone          : SKY-001
+Flown          : Fri, 06 Nov 2026 21:07:48 GMT
+Test scenario  : Normal delivery: no hazards were set up on the route.
+Operator wallet: 0x69A5160E8bf27A2a9D8d17eaff0De079CfdFA12A
+
+This summary is generated from the drone's sealed black box: every decision, position and action
+was signed, encrypted and uploaded to 0G Storage during the flight, and fingerprinted on 0G Chain.
+It is a readable view of that record; the sealed record itself is the evidence.
+
+------------------------------------------------------------------------------------------------
+1. THE RULES THE DRONE AGREED TO (signed flight permit, before take-off)
+------------------------------------------------------------------------------------------------
+  - Fly only inside the permitted area, never inside: AIRPORT.
+  - Stay under 1.6 m (simulator scale).
+  - Do not take off if the wind is above 9 m/s.
+  - Keep at least 15% battery in reserve.
+  - Before every take-off, reroute, drop and landing, ask 0G and act only on a fresh ALLOW.
+
+------------------------------------------------------------------------------------------------
+2. WHAT HAPPENED, STEP BY STEP
+------------------------------------------------------------------------------------------------
+    0.0 s  Flight opened under the signed permit (permit fingerprint 0x79e4b623404e5e4c...).
+    3.2 s  ASKED 0G: may the drone take off?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No obvious hazards detected
+        in the image."
+        0G request ID 01d5f72a-1f3f-4513-80f9-ac454ed06949, model 0gm-1.0-35b-a3b, answered in 3.2 s.
+    3.2 s  ACTION: the drone did take off WITH an approved 0G decision.
+    7.0 s  ASKED 0G: may the drone fly to the next waypoint?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No obvious hazards or people
+        visible in the image."
+        0G request ID d51c64e8-7563-4009-94c4-0876bfb792d9, model 0gm-1.0-35b-a3b, answered in 1.8 s.
+    7.0 s  ACTION: the drone did fly to the next waypoint WITH an approved 0G decision.
+   14.8 s  ASKED 0G: may the drone fly to the next waypoint?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No obvious hazards visible
+        in the image."
+        0G request ID 0bf35f1e-fed6-48eb-86a7-3da4f9dd4e34, model 0gm-1.0-35b-a3b, answered in 2.6 s.
+   14.8 s  ACTION: the drone did fly to the next waypoint WITH an approved 0G decision.
+   28.2 s  ASKED 0G: may the drone drop the package?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No persons visible in the
+        target zone."
+        0G request ID 8a36249d-9956-42f1-a1e5-d96a14e48890, model 0gm-1.0-35b-a3b, answered in 2.6 s.
+   28.2 s  ACTION: the drone did drop the package WITH an approved 0G decision.
+   30.9 s  ASKED 0G: may the drone fly to the next waypoint?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No obvious hazards or people
+        visible in the image."
+        0G request ID 25d53bea-3eba-42da-bc34-27c471c230cb, model 0gm-1.0-35b-a3b, answered in 1.7 s.
+   30.9 s  ACTION: the drone did fly to the next waypoint WITH an approved 0G decision.
+   37.6 s  ASKED 0G: may the drone fly to the next waypoint?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No obvious hazards or people
+        visible in the image."
+        0G request ID f90e02bf-fb59-4574-8d87-b8b8c5d1f2ee, model 0gm-1.0-35b-a3b, answered in 2.6 s.
+   37.6 s  ACTION: the drone did fly to the next waypoint WITH an approved 0G decision.
+   45.2 s  ASKED 0G: may the drone land?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No person visible in the
+        target zone."
+        0G request ID f1113878-f88c-4b5e-bf39-0306caa8a696, model 0gm-1.0-35b-a3b, answered in 2.3 s.
+   45.2 s  ACTION: the drone did land WITH an approved 0G decision.
+   50.8 s  Flight ended. Battery left: 82%.
+
+------------------------------------------------------------------------------------------------
+3. THE INDEPENDENT JUDGE'S CHECKS (Chainlink workflow, objective rules)
+------------------------------------------------------------------------------------------------
+  [  OK  ] B1  Stayed inside the permitted area and out of every no-fly zone
+  [  OK  ] B2  Stayed under the height ceiling
+  [  OK  ] B3  Every action (take-off, reroute, drop, land) was approved by 0G first
+  [  OK  ] B4  Nobody overrode a 0G refusal
+  [  OK  ] B5  The record is complete and unedited (matches the fingerprints on 0G Chain)
+  [  OK  ] B6  Did not take off in wind above the permit limit
+
+------------------------------------------------------------------------------------------------
+4. IS THIS RECORD GENUINE?
+------------------------------------------------------------------------------------------------
+  YES. 31 records; every fingerprint matches the anchors sealed on 0G Chain.
+  Where the evidence lives:
+    - records 0-23: 0G Storage root 0xa554a42e1026d74d6fab0411f0fbd5b3463540b2a61b3e193da20a44bde1d9ab
+    - records 24-30: 0G Storage root 0xd6cf9f3a0f0bdeeaae0eea2dd1174c2a3ebff4191978c67363265a4569946d6d
+      anchored on 0G Chain: https://chainscan-galileo.0g.ai/tx/0xfe8651aeb336589a1af726d3ae2b26dc446d07b9b5f0eb0321358f01820df63e
+      anchored on 0G Chain: https://chainscan-galileo.0g.ai/tx/0x5fd598d75175c0446de4eb3bc4eeb70307aef5f9ec56e70538536bea3b8eb927
+    - flight opened on 0G Chain: https://chainscan-galileo.0g.ai/tx/0x95e56a530738397febf27db958b4986b793173bfebc1731258f5c95ee88e4f61
+    - look up any storage root at https://storagescan-galileo.0g.ai
+
+------------------------------------------------------------------------------------------------
+5. VERDICT AND MONEY
+------------------------------------------------------------------------------------------------
+  REVIEW: the sealed record shows no objective rule was broken.
+  If a victim files a claim, the money is held on Arc and a human insurer decides, using this
+  same sealed record plus the victim's own sealed evidence. Nothing is paid automatically.
+  Claims filed against this flight: none.
+
+------------------------------------------------------------------------------------------------
+6. FOR AN INSURER, IN ONE MINUTE
+------------------------------------------------------------------------------------------------
+  - 7 decisions were requested; 7 were answered by 0G Private Computer.
+  - Every action the drone took was approved by 0G first.
+  - The record is intact: nobody, including the operator, has changed it since the flight.
+  - Outcome: no objective breach; any claim goes to human review.
+
+------------------------------------------------------------------------------------------------
+GLOSSARY
+------------------------------------------------------------------------------------------------
+  0G Private Computer : the AI service that looks at the drone's camera and answers ALLOW / DENY.
+  0G Storage          : where the encrypted black box is uploaded during the flight.
+  0G Chain            : where each part of the record is fingerprinted, so edits are detectable.
+  Chainlink judge     : an independent workflow that checks the record and the rules, then rules.
+  Arc / USDC bond     : money the operator locks in advance; it pays victims on a BREACH.
+  Safety fallback     : a pre-approved safe action when 0G can't answer; never a faked approval.
+================================================================================================

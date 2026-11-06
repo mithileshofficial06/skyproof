@@ -1,5 +1,86 @@
 [
  {
+  "flightId": "SKY-001-full-1793999437321",
+  "scenario": "full",
+  "startedAt": 1793999437321,
+  "records": 59,
+  "decisions": 16,
+  "zgDecisions": 16,
+  "intact": true,
+  "verdict": "REVIEW",
+  "breaches": [],
+  "chainFlightId": "0x70d983aa64614c2307782a54726480555969d2c2c356f56a852e03c498ed22f0",
+  "claims": []
+ },
+ {
+  "flightId": "SKY-001-blocked-1793999369786",
+  "scenario": "blocked",
+  "startedAt": 1793999369786,
+  "records": 52,
+  "decisions": 16,
+  "zgDecisions": 16,
+  "intact": true,
+  "verdict": "REVIEW",
+  "breaches": [],
+  "chainFlightId": "0x022a813635855dbce8ceb0003318cf754380d1fcb5b908554a37ca1daffc49e6",
+  "claims": []
+ },
+ {
+  "flightId": "SKY-001-geofence_breach-1793999343860",
+  "scenario": "geofence_breach",
+  "startedAt": 1793999343861,
+  "records": 17,
+  "decisions": 0,
+  "zgDecisions": 0,
+  "intact": true,
+  "verdict": "BREACH",
+  "breaches": [
+   "B3_UNAPPROVED_ACTION",
+   "B1_GEOFENCE"
+  ],
+  "chainFlightId": "0x4a3aa546c9d0d5b7d20749b8b56f02f6feda827d28569d845f5a78f3f2ef493c",
+  "claims": []
+ },
+ {
+  "flightId": "SKY-001-network_down-1793999294094",
+  "scenario": "network_down",
+  "startedAt": 1793999294094,
+  "records": 30,
+  "decisions": 9,
+  "zgDecisions": 3,
+  "intact": true,
+  "verdict": "REVIEW",
+  "breaches": [],
+  "chainFlightId": "0x9d5dd77df663b9a8fce586cae3111cf1d20619d50ec5e7d3f82d1ff81d6e51ef",
+  "claims": []
+ },
+ {
+  "flightId": "SKY-001-normal-1793999241485",
+  "scenario": "normal",
+  "startedAt": 1793999241486,
+  "records": 31,
+  "decisions": 7,
+  "zgDecisions": 7,
+  "intact": true,
+  "verdict": "REVIEW",
+  "breaches": [],
+  "chainFlightId": "0xe4e26d670475f2a837142d843deb0d5c774ad881972dc2abf7afcad7239a1b51",
+  "claims": []
+ },
+ {
+  "flightId": "SKY-001-people_below-1793999183871",
+  "scenario": "people_below",
+  "startedAt": 1793999183871,
+  "records": 35,
+  "decisions": 8,
+  "zgDecisions": 8,
+  "intact": true,
+  "verdict": "REVIEW",
+  "breaches": [],
+  "chainFlightId": "0x8bf253f9d19d62bf309c9ca58d51a0f53b86f858df010312e1bdcf784269ab87",
+  "claims": []
+ },
+ {
   "flightId": "SKY-001-geofence_breach-1793994709528",
   "scenario": "geofence_breach",
   "startedAt": 1793994709528,
@@ -13,7 +94,13 @@
    "B1_GEOFENCE"
   ],
   "chainFlightId": "0x2210567ead54144cf0ee7dc9acb5f9434fece7e37bc527c4bd865a07ae8bc65f",
-  "claims": []
+  "claims": [
+   {
+    "claimId": 10,
+    "state": "Paid",
+    "verdict": "BREACH"
+   }
+  ]
  },
  {
   "flightId": "SKY-001-people_below-1793994439408",

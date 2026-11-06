@@ -60,7 +60,7 @@ Status as of 7 Nov 2026. ✅ done · ⏳ in progress / to do · ➖ deliberately
 ## Next (after the hackathon)
 | Item | Why |
 |---|---|
-| 0G serving-broker SDK with `processResponse()` verification; judge checks the proof per decision | verifiable (TEE) decisions |
+| Verify each response's enclave signature (0G serving-broker `processResponse()`) and have the judge check it per decision | per-response TEE proof (provider attestation + sealed channel already done) |
 | Deploy the CRE workflow to a DON; set `expectedWorkflowId/Owner` on the escrow | production judge |
 | Encrypt each flight key to the insurer/judge as well | operator can't withhold |
 | Location + time match between complaint and record in the judge | stop claims against a breach flight from elsewhere |

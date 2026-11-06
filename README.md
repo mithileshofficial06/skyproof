@@ -103,7 +103,7 @@ Everything below works from the hosted site. The flight computer runs on the tea
 
 | 0G product | Role | Where in code |
 |---|---|---|
-| **Private Computer** (router `router-api.0g.ai`, model `qwen3.8-flash`) | Makes every mission decision (ALLOW/DENY) and resolves in-flight situations (pick an option). Each answer's request id, provider, model, latency, prompt hash and frame hash are recorded. | `officer/src/zg.ts`, `officer/src/server.ts` |
+| **Private Computer** (router `router-api.0g.ai`, model `0gm-1.0-35b-a3b`, **TEE-attested: Intel TDX, verifier dstack; sealed end-to-end channel**) | Makes every mission decision (ALLOW/DENY) and resolves in-flight situations (pick an option). Each answer's request id, provider, model, latency, prompt hash, frame hash **and TEE attestation + `x-0g-e2ee: sealed`** are recorded. | `officer/src/zg.ts`, `officer/src/server.ts` |
 | **Storage** (indexer `indexer-storage-testnet-turbo.0g.ai`, official TS SDK) | Holds the flight record: segments encrypted with AES-256-GCM (one key per flight), uploaded **during** the flight every ~15 s. Replays are rebuilt by downloading from 0G. Victim evidence and insurer reasons are stored here too. | `officer/src/sealer.ts`, `officer/src/chain.ts`, `officer/src/crypto.ts`, `officer/src/evidence.ts` |
 | **Chain** (Galileo, chain 16602) | `DroneRegistry`: airframe, signed permit, approved model and prompt hashes. `FlightLog`: `openFlight` → `anchor(head, storageRoot)` per segment → `closeFlight`. Anyone can compare a record with these anchors. | `contracts/contracts/*.sol`, `officer/src/setup-chain.ts` |
 
@@ -301,7 +301,7 @@ End to end on testnet (7 Nov 2026): a flight started from the website (0G decide
 
 ## Known limitations (honest list)
 
-- **0G compute is not TEE-attested.** Calls go through `router-api.0g.ai`; the dashboard shows the model served "via aliyun". The request ids are real 0G receipts, but we don't claim secure-enclave execution. Next step: the 0G serving-broker SDK with `processResponse()` verification, and the judge checking that proof per decision.
+- **0G decisions run on a TEE-attested provider** (`0gm-1.0-35b-a3b`: Intel TDX, verified by dstack, per 0G's model registry) over a sealed end-to-end channel, and both facts are recorded per decision. We do not yet re-verify each response's enclave signature ourselves (0G's serving-broker SDK contract did not respond on the current testnet); that is the next step.
 - **The CRE workflow runs as `cre workflow simulate --broadcast`**, because the account has no DON deploy access yet. The verdicts on Arc are real writes through the CRE forwarder.
 - **Workflow ID / owner pinning is not set on the escrow** (the forwarder check is). Set `expectedWorkflowId/Owner` when the workflow is deployed to a DON.
 - **The operator holds each flight's decryption key** and releases it via the evidence server. Next step: encrypt the key to the insurer/judge as well.

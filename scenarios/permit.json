@@ -68,7 +68,7 @@
       0.3
     ]
   },
-  "visionModel": "qwen3.8-flash",
+  "visionModel": "0gm-1.0-35b-a3b",
   "dropSpots": {
     "DZ-1": {
       "A": [

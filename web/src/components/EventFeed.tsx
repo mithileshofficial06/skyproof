@@ -53,6 +53,14 @@ export function EventFeed({ events, now, onSeek }: { events: FlightEvent[]; now:
                       <span className="select-all break-all">{e.zgRequestId}</span>
                     </div>
                   )}
+                  {e.tee && (
+                    <div className="flex gap-1.5 text-[#55595f]">
+                      <span className="w-[52px] shrink-0 text-[#8a8d93]">0G TEE</span>
+                      <span className={e.tee.attested ? "text-[#0f766e]" : "text-[#8a8d93]"} title={e.tee.attested ? `Decided by a 0G provider attested to run in a TEE (${e.tee.teeType ?? "TEE"}, verifier ${e.tee.verifier ?? "?"}); the call was ${e.tee.e2ee === "sealed" ? "end-to-end encrypted (sealed)" : "not sealed"}` : "provider not TEE-attested"}>
+                        {e.tee.attested ? `attested · ${e.tee.teeType ?? "TEE"}${e.tee.e2ee === "sealed" ? " · sealed" : ""}` : "not attested"}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex gap-1.5">
                     <span className="w-[52px] shrink-0 text-[#8a8d93]">0G tx</span>
                     {e.anchorTx ? (
