@@ -1,0 +1,20 @@
+Initializing...
+Fetching account details...
+
+Account Details
+╭─────────────────────────────────────────╮
+│ Email:             ponr2674@gmail.com   │
+│ Organization ID:   org_lerx0uvZWOKeYaDs │
+│ Organization Name: My Org               │
+│ Deploy Access:     Not enabled          │
+╰─────────────────────────────────────────╯
+
+
+⚠️  Update available! You’re running 1.38.0, but 1.39.0 is the latest.
+Run `cre update` or visit https://github.com/smartcontractkit/cre-cli/releases to upgrade.
+
+CRE CLI version v1.38.0
+
+⚠️  Update available! You’re running 1.38.0, but 1.39.0 is the latest.
+Run `cre update` or visit https://github.com/smartcontractkit/cre-cli/releases to upgrade.
+

@@ -1,6 +1,6 @@
 "use client";
 // "How it works" as a horizontal pipeline: four stations on one line, a packet travels between them,
-// and the active station opens below. Auto-plays while on screen (pauses on hover); click to jump.
+// and the active station opens below. Auto-plays while on screen; click a step (or Back/Next) to jump.
 import { useEffect, useState } from "react";
 import { useInView } from "@/components/motion";
 import { cx } from "@/components/ui";
@@ -44,7 +44,7 @@ const DWELL = 5200;
 export function Story() {
   const [ref, seen] = useInView<HTMLElement>(false, "0px");
   const [step, setStep] = useState(0);
-  const [hold, setHold] = useState(false);
+  const hold = false;
   const [tick, setTick] = useState(0); // restarts the progress bar when the user jumps
 
   useEffect(() => {
@@ -60,22 +60,22 @@ export function Story() {
   };
 
   return (
-    <section id="how" ref={ref} className="scroll-mt-24" onMouseEnter={() => setHold(true)} onMouseLeave={() => setHold(false)}>
+    <section id="how" ref={ref} className="scroll-mt-24">
       <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#c2410c]">How SkyProof works</p>
       <h2 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight tracking-[-0.02em] text-[#15171a] md:text-4xl">0G decides and records. Chainlink judges. Arc pays.</h2>
 
       {/* the line */}
       <div className="relative mt-12">
         <div className="absolute left-[12.5%] right-[12.5%] top-7 h-[3px] rounded-full bg-[#e3ded3]" />
-        <div className="absolute left-[12.5%] top-7 h-[3px] rounded-full transition-all duration-700 ease-out" style={{ width: `${(step / (STEPS.length - 1)) * 75}%`, background: `linear-gradient(90deg, #7c5cff, ${s.color})` }} />
+        <div className="absolute left-[12.5%] top-7 h-[3px] rounded-full transition-all duration-700 ease-out" style={{ width: `${(step / (STEPS.length - 1)) * 75}%`, background: s.color }} />
         {/* the packet */}
         <span className="absolute top-7 z-0 -ml-2 -mt-[7px] h-4 w-4 rounded-full transition-all duration-700 ease-out" style={{ left: `${12.5 + step * 25}%`, background: s.color, boxShadow: `0 0 0 6px ${s.color}22, 0 0 18px ${s.color}` }} />
         <div className="relative z-10 grid grid-cols-4">
           {STEPS.map((x, i) => (
             <button key={x.key} onClick={() => go(i)} className="group flex flex-col items-center gap-3 text-center">
               <span
-                className={cx("grid h-14 w-14 place-items-center rounded-2xl border-2 font-mono text-sm font-bold transition-all duration-500", i === step ? "scale-110 text-white shadow-lg" : i < step ? "text-white" : "bg-[#fffdf8] text-[#8a8d93] group-hover:border-[#cfc8ba]")}
-                style={{ background: i <= step ? x.color : undefined, borderColor: i <= step ? x.color : "#e3ded3" }}
+                className={cx("grid h-14 w-14 place-items-center rounded-2xl border-2 font-mono text-sm font-bold transition-all duration-500", i === step ? "scale-110 text-white" : i < step ? "text-[#e1e3fa]" : "bg-[#0c0e2a]/70 text-[#8f93c4] group-hover:border-white/40")}
+                style={{ background: i <= step ? `linear-gradient(${x.color}${i === step ? "33" : "1a"}, ${x.color}${i === step ? "33" : "1a"}), #0c0e2a` : undefined, borderColor: i <= step ? x.color : "rgba(255,255,255,0.14)", boxShadow: i === step ? `0 0 0 6px ${x.color}1f` : undefined }}
               >
                 {String(i + 1).padStart(2, "0")}
               </span>
@@ -92,7 +92,7 @@ export function Story() {
       </div>
 
       {/* the open station */}
-      <div key={step} className="station mt-10 grid overflow-hidden rounded-2xl border lg:grid-cols-[0.9fr_1.1fr]" style={{ borderColor: `${s.color}40`, background: s.tint }}>
+      <div key={step} className="station mt-10 grid overflow-hidden rounded-2xl border border-l-[3px] bg-[#0c0e2a]/70 backdrop-blur-lg lg:grid-cols-[0.9fr_1.1fr]" style={{ borderColor: "rgba(255,255,255,0.1)", borderLeftColor: s.color }}>
         <div className="p-7 md:p-9">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em]" style={{ color: s.color }}>
             {String(step + 1).padStart(2, "0")} · {s.who}
@@ -100,7 +100,7 @@ export function Story() {
           <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#15171a] md:text-[28px]">{s.title}</h3>
           <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#45484e]">{s.body}</p>
           <div className="mt-6 flex gap-2">
-            <button onClick={() => go((step + STEPS.length - 1) % STEPS.length)} className="rounded-md border border-[#d9d3c6] bg-white/70 px-3 py-1.5 text-xs font-semibold text-[#33363b] hover:bg-white">
+            <button onClick={() => go((step + STEPS.length - 1) % STEPS.length)} className="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#f5f6ff] hover:bg-white/20">
               ← Back
             </button>
             <button onClick={() => go((step + 1) % STEPS.length)} className="rounded-md px-3 py-1.5 text-xs font-semibold text-white" style={{ background: s.color }}>
@@ -108,7 +108,7 @@ export function Story() {
             </button>
           </div>
         </div>
-        <div className="relative min-h-[300px] border-t lg:border-l lg:border-t-0" style={{ borderColor: `${s.color}30`, background: "#fffdf8" }}>
+        <div className="relative min-h-[300px] border-t lg:border-l lg:border-t-0" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
           {[<Decide key={0} />, <Seal key={1} />, <Judge key={2} />, <Pay key={3} />][step]}
         </div>
       </div>
@@ -119,13 +119,13 @@ export function Story() {
 function DroneIcon() {
   return (
     <svg viewBox="0 0 64 64" className="h-16 w-16">
-      <g stroke="#15171a" strokeWidth="2.4" fill="none">
+      <g stroke="#f5f6ff" strokeWidth="2.4" fill="none">
         <path d="M20 20l24 24M44 20L20 44" />
         {[[16, 16], [48, 16], [16, 48], [48, 48]].map(([x, y]) => (
           <ellipse key={`${x}${y}`} cx={x} cy={y} rx="9" ry="3" className="rotor" />
         ))}
       </g>
-      <rect x="26" y="26" width="12" height="12" rx="3" fill="#15171a" />
+      <rect x="26" y="26" width="12" height="12" rx="3" fill="#f5f6ff" />
     </svg>
   );
 }
@@ -143,7 +143,7 @@ function Decide() {
         ))}
       </div>
       <div className="flex flex-col items-center gap-3">
-        <div className="grid h-20 w-20 place-items-center rounded-2xl bg-[#7c5cff] font-mono text-sm font-bold text-white shadow-[0_10px_30px_rgba(124,92,255,0.35)]">0G</div>
+        <div className="grid h-20 w-20 place-items-center rounded-2xl border-2 border-[#7c5cff] bg-[#7c5cff]/15 font-mono text-sm font-bold text-[#cfc4ff]">0G</div>
         <span className="stamp rounded border-2 border-[#0f766e] px-2 py-0.5 font-mono text-sm font-bold tracking-wider text-[#0f766e]" style={{ animationDelay: "0.8s" }}>
           ALLOW
         </span>

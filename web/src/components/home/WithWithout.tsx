@@ -19,7 +19,7 @@ export function WithWithout() {
         <h2 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight tracking-[-0.02em] text-[#15171a] md:text-4xl">The same accident, two endings.</h2>
       </Reveal>
       <div className="mt-10 overflow-hidden rounded-xl border border-[#e3ded3]">
-        <div className="grid grid-cols-[140px_1fr_1fr] bg-[#15171a] text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f4f1ea] md:grid-cols-[180px_1fr_1fr]">
+        <div className="grid grid-cols-[140px_1fr_1fr] bg-[#1a1d4a] text-[11px] font-semibold uppercase tracking-[0.14em] text-[#f4f1ea] md:grid-cols-[180px_1fr_1fr]">
           <div className="px-4 py-3 text-[#8a8d93]">Stage</div>
           <div className="px-4 py-3 text-[#fca5a5]">Today</div>
           <div className="px-4 py-3 text-[#5eead4]">With SkyProof</div>

@@ -3,13 +3,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import escrowAbi from "@/lib/escrowAbi.json";
 import FlightReplay from "@/components/FlightReplay";
-import { HeroAnimation } from "@/components/HeroAnimation";
+import { Hero } from "@/components/home/Hero";
 import ProofCheck from "@/components/ProofCheck";
 import { Problem } from "@/components/home/Problem";
 import { Sponsors } from "@/components/home/Sponsors";
 import { Story } from "@/components/home/Story";
 import { WithWithout } from "@/components/home/WithWithout";
-import { CountUp, Reveal } from "@/components/motion";
+import { Reveal } from "@/components/motion";
 import { type ClaimView, ESCROW, pub } from "@/lib/arc";
 import { pickFlight, useFlight, useIndex } from "@/lib/data";
 
@@ -37,84 +37,35 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-32">
-      {/* hero: the cockpit */}
-      <section className="cockpit relative left-1/2 -mt-20 w-screen -translate-x-1/2 overflow-hidden bg-[#0b1017] pb-20 pt-32">
-        <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.14]" aria-hidden>
-          <defs>
-            <pattern id="hg" width="36" height="36" patternUnits="userSpaceOnUse">
-              <path d="M36 0H0V36" fill="none" stroke="#4b6178" strokeWidth="0.6" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#hg)" />
-        </svg>
-        <div className="pointer-events-none absolute -right-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#7c5cff]/20 blur-[120px]" />
-        <div className="pointer-events-none absolute -bottom-48 left-10 h-[420px] w-[420px] rounded-full bg-[#22d3ee]/10 blur-[120px]" />
-        <div className="relative mx-auto grid max-w-[1400px] items-center gap-12 px-5 sm:px-8 lg:grid-cols-[1fr_1.1fr]">
-          <div className="rise">
-            <p className="flex items-center gap-2 font-mono text-xs uppercase tracking-[0.18em] text-[#22d3ee]">
-              <span className="blink h-1.5 w-1.5 rounded-full bg-[#22d3ee]" />
-              ETHGlobal Mumbai 2026 · 0G Physical AI
-            </p>
-            <h1 className="mt-5 text-[44px] font-semibold leading-[1.04] tracking-[-0.03em] text-white md:text-[62px]">
-              An independent black box for <span className="bg-gradient-to-r from-[#b4a2ff] via-[#8ea5f0] to-[#67d4e2] bg-clip-text text-transparent">autonomous drones.</span>
-            </h1>
-            <p className="mt-6 max-w-xl text-[17px] leading-relaxed text-[#b3bfcc]">
-              When a drone hurts someone, the only record of what it saw and decided belongs to the operator. SkyProof moves those decisions onto 0G, seals the record where nobody can edit it, and pays the victim automatically when the record shows a rule was broken.
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link href="/live" className="rounded-md bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#061018] shadow-[0_0_30px_rgba(34,211,238,0.35)] hover:bg-[#67e8f9]">
-                Watch it fly live
-              </Link>
-              <Link href={pick ? `/flights/${pick.flightId}` : "/flights"} className="rounded-md border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10">
-                Replay a sealed flight
-              </Link>
-              <a href="#problem" className="px-3 py-3 text-sm font-semibold text-[#94a3b3] hover:text-white">
-                Why it matters ↓
-              </a>
-            </div>
-            {stats && (
-              <dl className="mt-12 grid max-w-xl grid-cols-2 gap-y-6 border-t border-white/10 pt-6 sm:grid-cols-4">
-                {[
-                  [stats.flights, "flights sealed on 0G", "#b4a2ff"],
-                  [stats.records, "records sealed", "#b4a2ff"],
-                  [stats.decisions, "decisions by 0G", "#b4a2ff"],
-                  [paid, "USDC paid on Arc by verdict", "#67d4e2"],
-                ].map(([n, l, c]) => (
-                  <div key={l as string}>
-                    <dt className="font-mono text-3xl font-semibold" style={{ color: c as string }}>
-                      {n === null ? "…" : <CountUp to={n as number} />}
-                    </dt>
-                    <dd className="mt-1 text-[11px] leading-tight text-[#6c7c8d]">{l}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-          </div>
-          <div className="rise relative" style={{ animationDelay: "0.15s" }}>
-            <div className="overflow-hidden rounded-xl border border-white/15 bg-[#ebe6db] shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
-              <HeroAnimation />
-            </div>
-            {["left-0 top-0 border-l-2 border-t-2", "right-0 top-0 border-r-2 border-t-2", "bottom-0 left-0 border-b-2 border-l-2", "bottom-0 right-0 border-b-2 border-r-2"].map((c) => (
-              <span key={c} className={`pointer-events-none absolute -m-2 h-5 w-5 border-[#22d3ee] ${c}`} />
-            ))}
-            {stats && (
-              <div className="absolute -bottom-5 left-6 rounded-md border border-white/15 bg-[#101822] px-3 py-1.5 font-mono text-[11px] text-[#5eead4]">
-                {stats.intact}/{stats.flights} records intact on 0G Chain ✓
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
+    <div>
+      <Hero
+        liveHref="/live"
+        replayHref={pick ? `/flights/${pick.flightId}` : "/flights"}
+        stats={[
+          { label: "flights sealed on 0G", value: stats ? stats.flights : null },
+          { label: "records sealed", value: stats ? stats.records : null },
+          { label: "decisions by 0G", value: stats ? stats.decisions : null },
+          { label: "USDC paid on Arc", value: paid },
+        ]}
+      />
 
+      <Band n="01" label="The problem">
       <Problem />
+      </Band>
 
+      <Band n="02" label="How it works" tint>
       <Story />
+      </Band>
 
+      <Band n="03" label="Two endings">
       <WithWithout />
+      </Band>
 
+      <Band n="04" label="Built on" tint>
       <Sponsors />
+      </Band>
 
+      <Band n="05" label="Don't trust us">
       {/* try to cheat */}
       <section>
         <Reveal>
@@ -124,7 +75,9 @@ export default function Home() {
         </Reveal>
         <div className="mt-8">{cheatFlight ? <ProofCheck flight={cheatFlight} /> : <div className="h-40 rounded-lg border border-[#e3ded3]" />}</div>
       </section>
+      </Band>
 
+      <Band n="06" label="A real flight" tint>
       {/* real flight */}
       <section>
         <Reveal>
@@ -143,7 +96,9 @@ export default function Home() {
           )}
         </div>
       </section>
+      </Band>
 
+      <Band n="07" label="What 0G decides">
       {/* situations */}
       <section>
         <Reveal>
@@ -166,7 +121,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+      </Band>
 
+      <div className="py-24" />
       <Reveal>
         <section className="cockpit relative overflow-hidden rounded-xl bg-[#0b1017] px-8 py-14 md:px-12">
           <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#7c5cff]/25 blur-[90px]" />
@@ -197,4 +154,20 @@ function usePaidOnArc() {
     })().catch(() => setPaid(null));
   }, []);
   return paid;
+}
+
+/** A full-width band per section: divider line, alternating tint, numbered label, generous spacing. */
+function Band({ n, label, tint, children }: { n: string; label: string; tint?: boolean; children: React.ReactNode }) {
+  return (
+    <div className={`relative left-1/2 w-screen -translate-x-1/2 border-t border-white/10 ${tint ? "bg-white/[0.035]" : ""}`}>
+      <div className="mx-auto max-w-[1400px] px-5 py-24 sm:px-8">
+        <div className="mb-10 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.24em] text-[#9599c8]">
+          <span className="text-[#f5f6ff]">{n}</span>
+          <span className="h-px w-10 bg-white/25" />
+          {label}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
 }

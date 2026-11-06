@@ -271,8 +271,8 @@ function ProofPanels({ flight }: { flight: FlightFile }) {
 
 function Row({ k, children }: { k: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span className="text-[#6b6f76]">{k}</span>
+    <div className="flex items-baseline justify-between gap-3">
+      <span className="min-w-0 text-[#6b6f76]">{k}</span>
       {children}
     </div>
   );

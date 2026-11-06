@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import FlightReplay from "@/components/FlightReplay";
+import { FlightSummary } from "@/components/FlightSummary";
 import { Badge } from "@/components/ui";
 import { useFlight } from "@/lib/data";
 import { scenarioLabel, short, ZG_EXPLORER } from "@/lib/flight";
@@ -20,6 +21,9 @@ export default function FlightPage() {
           {data && (
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#55595f]">
               <Badge tone="zg">Rebuilt from 0G Storage</Badge>
+              <a href={`/data/flights/${data.flightId}.summary.txt`} target="_blank" rel="noreferrer" className="rounded-full border border-white/20 bg-white/10 px-2.5 py-0.5 font-medium text-[#f5f6ff] hover:bg-white/20">
+                Plain-English summary ↗
+              </a>
               <Badge tone={data.report.ok ? "ok" : "deny"}>{data.report.ok ? "Every anchor matches" : "Record broken"}</Badge>
               <span className="font-mono">
                 0G flight{" "}
@@ -33,6 +37,7 @@ export default function FlightPage() {
       </div>
       {error && <p className="text-[#b91c1c]">Could not load this flight: {error}</p>}
       {data && <FlightReplay flight={data} />}
+      {data && <FlightSummary flightId={data.flightId} />}
     </div>
   );
 }

@@ -1,0 +1,71 @@
+$ tsx src/replay.ts "SKY-001-full-1793927431338"
+flight SKY-001-full-1793927431338
+  0G Chain FlightLog 0x2E6F0f6f3121e3aA7984ffC292f80E75c937cBa5  flight 0x8ea031192f92af8d11f221c974b4ce3a3e11cf7532ada8eb6e27bfd1bf991db9
+  operator 0x69A5160E8bf27A2a9D8d17eaff0De079CfdFA12A  open=false  anchors=4  permit on-chain 0x9ffe73823e5b30df…
+Starting download to: D:\SkyProof\officer\.tmp\dl/SKY-001-full-1793927431338-0.bin, proof: true
+Downloading single file with root hash: 0x14cc130ecfa44f7f74197bdf34120e23ae377bb4df92e746fc73cb5db89a8867
+Getting file locations for root hash: 0x14cc130ecfa44f7f74197bdf34120e23ae377bb4df92e746fc73cb5db89a8867
+Found 4 locations for 0x14cc130ecfa44f7f74197bdf34120e23ae377bb4df92e746fc73cb5db89a8867: [
+  'http://34.19.125.196:5678',
+  'http://34.102.76.235:5678',
+  'http://34.133.200.179:5678',
+  'http://34.169.28.106:5678'
+]
+Selected 2 of 4 nodes for 0x14cc130ecfa44f7f74197bdf34120e23ae377bb4df92e746fc73cb5db89a8867
+  segment 0: records 0-10 from 0G Storage root 0x14cc130ecfa4… (11795 B, 2714 ms)
+Starting download to: D:\SkyProof\officer\.tmp\dl/SKY-001-full-1793927431338-1.bin, proof: true
+Downloading single file with root hash: 0x7795023ab7da9a89fda6903f291c6f77221c85e244d5dac881b1bb9e59dc31f8
+Getting file locations for root hash: 0x7795023ab7da9a89fda6903f291c6f77221c85e244d5dac881b1bb9e59dc31f8
+Found 4 locations for 0x7795023ab7da9a89fda6903f291c6f77221c85e244d5dac881b1bb9e59dc31f8: [
+  'http://34.19.125.196:5678',
+  'http://34.102.76.235:5678',
+  'http://34.169.28.106:5678',
+  'http://34.133.200.179:5678'
+]
+Selected 2 of 4 nodes for 0x7795023ab7da9a89fda6903f291c6f77221c85e244d5dac881b1bb9e59dc31f8
+  segment 1: records 11-23 from 0G Storage root 0x7795023ab7da… (16195 B, 2057 ms)
+Starting download to: D:\SkyProof\officer\.tmp\dl/SKY-001-full-1793927431338-2.bin, proof: true
+Downloading single file with root hash: 0x7ee4bf83c4895fc38d4d4293daf2bb0cc4f828a5aac6b28b20d026d124ea41eb
+Getting file locations for root hash: 0x7ee4bf83c4895fc38d4d4293daf2bb0cc4f828a5aac6b28b20d026d124ea41eb
+Found 4 locations for 0x7ee4bf83c4895fc38d4d4293daf2bb0cc4f828a5aac6b28b20d026d124ea41eb: [
+  'http://34.169.28.106:5678',
+  'http://34.102.76.235:5678',
+  'http://34.133.200.179:5678',
+  'http://34.83.53.209:5678'
+]
+Selected 2 of 4 nodes for 0x7ee4bf83c4895fc38d4d4293daf2bb0cc4f828a5aac6b28b20d026d124ea41eb
+  segment 2: records 24-49 from 0G Storage root 0x7ee4bf83c489… (24934 B, 2078 ms)
+Starting download to: D:\SkyProof\officer\.tmp\dl/SKY-001-full-1793927431338-3.bin, proof: true
+Downloading single file with root hash: 0xff7564229e3101162b03fcc7b58687cde690fb871f6aeb3863c27a396df2f29d
+Getting file locations for root hash: 0xff7564229e3101162b03fcc7b58687cde690fb871f6aeb3863c27a396df2f29d
+Found 4 locations for 0xff7564229e3101162b03fcc7b58687cde690fb871f6aeb3863c27a396df2f29d: [
+  'http://34.133.200.179:5678',
+  'http://34.102.76.235:5678',
+  'http://34.83.53.209:5678',
+  'http://34.169.28.106:5678'
+]
+Selected 2 of 4 nodes for 0xff7564229e3101162b03fcc7b58687cde690fb871f6aeb3863c27a396df2f29d
+  segment 3: records 50-51 from 0G Storage root 0xff7564229e31… (2200 B, 1827 ms)
+
+record: 52 records, 13 decisions, 12 actions, 3 safe-stop steps
+integrity: ✅ intact, every 0G Chain anchor matches
+
+decisions:
+  #  2 TAKEOFF           -> ALLOW OK         [0G] 2c868406-fe72-4585-a629-65f729711493
+  #  5 REROUTE           -> ALLOW OK         [0G] 301abe6a-1bf4-4e02-9eb7-cb9c00dbe00b
+  #  8 PEOPLE_UNDER_PATH -> SHIFT_LEFT       [0G] 2afb1d54-f654-49c7-983b-b5f9994f5348
+  # 14 REROUTE           -> ALLOW OK         [0G] 9731a034-b466-43d9-a5c2-a3153af0df54
+  # 17 OBSTACLE          -> CLIMB            [0G] f26bfbc1-09cc-443e-a319-a0db2146ac3c
+  # 21 CHOOSE_DROP_SPOT  -> NONE             [0G] 0637b1c3-6dbb-44ad-88c6-055a476e2716
+  # 24 ZONE_BLOCKED      -> BACKUP_ZONE      [0G] 33c057e3-b981-4c95-9f00-1cbdc8048487
+  # 27 REROUTE           -> ALLOW OK         [0G] fcc30b35-9279-40a3-b553-4d23c6e3fcc5
+  # 30 REROUTE           -> ALLOW OK         [0G] b3e03d0d-1584-40a2-ae14-d97a75caf29a
+  # 34 REROUTE           -> ALLOW OK         [0G] d7e50550-8e37-42f4-a071-482076336cf4
+  # 37 CHOOSE_DROP_SPOT  -> P                [0G] 82a1cc80-4c7f-43ed-a40e-e2cc43ab0bb8
+  # 40 DROP              -> ALLOW OK         [0G] 0d03e756-965e-4049-b2a1-f488cee0544b
+  # 44 REROUTE           -> DENY UNSAFE      [0G] 7ef52a6a-dcf6-4c17-a834-eca36f17df57
+
+verdict: REVIEW
+
+full replay saved to D:\SkyProof\officer\.tmp\replay/SKY-001-full-1793927431338.json
+(0G Galileo block 64094944)

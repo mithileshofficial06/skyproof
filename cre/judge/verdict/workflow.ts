@@ -15,20 +15,19 @@ import {
 	type Runtime,
 	TxStatus,
 } from '@chainlink/cre-sdk'
-import { secp256k1 } from '@noble/curves/secp256k1'
 import {
 	type Address,
 	decodeFunctionResult,
 	encodeAbiParameters,
 	encodeFunctionData,
 	type Hex,
-	hexToBytes,
 	keccak256,
 	parseAbiParameters,
 	stringToHex,
 	toBytes,
 } from 'viem'
 import { z } from 'zod'
+import { type Anchor, type Breach, canonical, judge, type Rec, windBreach } from './rules'
 import { FlightLogABI } from '../contracts/evm/ts/generated/FlightLog'
 import { type ClaimWindowClosedDecoded, type DecodedLog, SkyProofEscrow } from '../contracts/evm/ts/generated/SkyProofEscrow'
 
@@ -63,6 +62,25 @@ const fetchText = (runtime: Runtime<Config>, url: string, body?: string): string
 		.sendRequest(runtime, (sr: HTTPSendRequester, u: string, b: string) => (b ? httpPost(sr, u, b) : httpGet(sr, u)), consensusIdenticalAggregation<string>())(url, body ?? '')
 		.result()
 
+/** GET that never throws: the status and body go through consensus, and the handler decides what a failure means */
+const tryGet = (runtime: Runtime<Config>, url: string): { status: number; body: string } =>
+	JSON.parse(
+		new cre.capabilities.HTTPClient()
+			.sendRequest(
+				runtime,
+				(sr: HTTPSendRequester, u: string) => {
+					try {
+						const r = sr.sendRequest({ method: 'GET', url: u }).result()
+						return JSON.stringify({ status: r.statusCode, body: Buffer.from(r.body).toString('utf-8') })
+					} catch {
+						return JSON.stringify({ status: 0, body: '' })
+					}
+				},
+				consensusIdenticalAggregation<string>(),
+			)(url)
+			.result(),
+	)
+
 /** eth_call against 0G Chain (not a CRE-native chain, so it is reached over JSON-RPC). */
 const zgCall = (runtime: Runtime<Config>, data: Hex): Hex => {
 	const req = JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: runtime.config.flightLog, data }, 'latest'] })
@@ -71,146 +89,109 @@ const zgCall = (runtime: Runtime<Config>, data: Hex): Hex => {
 	return res.result as Hex
 }
 
-// ---- record verification (same rules as officer/src/verify.ts) ------------------------------
-type Rec = { flightId: string; seq: number; prev: string; type: string; body: any; localTime: number; hash: Hex; sig: Hex }
-const ZERO = `0x${'00'.repeat(32)}`
-
-const canonical = (v: unknown): string => {
-	if (v === null || typeof v !== 'object') return JSON.stringify(v)
-	if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`
-	const o = v as Record<string, unknown>
-	return `{${Object.keys(o)
-		.sort()
-		.filter((k) => o[k] !== undefined)
-		.map((k) => `${JSON.stringify(k)}:${canonical(o[k])}`)
-		.join(',')}}`
-}
-
-const recoverSigner = (hash: Hex, sig: Hex): string => {
-	const b = hexToBytes(sig)
-	const v = b[64] >= 27 ? b[64] - 27 : b[64]
-	const pub = secp256k1.Signature.fromCompact(b.slice(0, 64)).addRecoveryBit(v).recoverPublicKey(hexToBytes(hash)).toRawBytes(false)
-	return `0x${keccak256(pub.slice(1)).slice(-40)}`
-}
-
-const inPoly = ([x, y]: number[], poly: number[][]): boolean => {
-	let inside = false
-	for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-		const [xi, yi] = poly[i]
-		const [xj, yj] = poly[j]
-		if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside
-	}
-	return inside
-}
-
-type Anchor = { seq: bigint; head: Hex; storageRoot: Hex; time: bigint }
-
-const judge = (records: Rec[], anchors: Anchor[], operator: string, permitHash: Hex) => {
-	const issues: string[] = []
-	const breaches: { code: string; detail: string }[] = []
-	let prev = ZERO
-	const bySeq = new Map<number, Rec>()
-	for (const [i, r] of records.entries()) {
-		if (r.seq !== i) { issues.push(`missing record at ${i}`); break }
-		if (r.prev !== prev) issues.push(`broken link at ${r.seq}`)
-		const { hash, sig, ...unsigned } = r
-		if (keccak256(toBytes(canonical(unsigned))) !== hash) issues.push(`record ${r.seq} edited`)
-		else if (recoverSigner(hash, sig).toLowerCase() !== operator.toLowerCase()) issues.push(`record ${r.seq} not signed by operator`)
-		prev = hash
-		bySeq.set(r.seq, r)
-	}
-	if (anchors.length === 0) issues.push('no anchors on 0G Chain')
-	for (const a of anchors) {
-		const r = bySeq.get(Number(a.seq))
-		if (!r) issues.push(`anchor ${a.seq} has no record`)
-		else if (r.hash !== a.head) issues.push(`anchor ${a.seq} does not match record`)
-	}
-	if (anchors.length && records.length - 1 > Number(anchors[anchors.length - 1].seq)) issues.push('records after last anchor')
-	const permit = records[0]?.body?.permit
-	if (!permit || records[0].body.permitHash !== permitHash) issues.push('permit missing or not the one registered for the flight')
-	for (const i of issues) breaches.push({ code: 'B5_RECORD_BROKEN', detail: i })
-
-	const decisions = new Map<string, Rec>()
-	let lastDenied: string | null = null
-	for (const r of records) {
-		const b = r.body
-		if (r.type === 'DECISION') {
-			decisions.set(r.hash, r)
-			if (b.kind !== 'SITUATION') lastDenied = b.verdict === 'ALLOW' ? null : b.request.cmd.type
-		}
-		if (r.type === 'ACTION') {
-			const d = b.decisionHash ? decisions.get(b.decisionHash) : undefined
-			if (!d || d.body.verdict !== 'ALLOW') breaches.push({ code: 'B3_UNAPPROVED_ACTION', detail: `${b.cmd.type} at record ${r.seq}` })
-			if (b.cmd.type === 'TAKEOFF' && permit && b.state?.windMs > permit.maxWindMs) breaches.push({ code: 'B6_UNSAFE_WIND_LAUNCH', detail: `wind ${b.state.windMs}` })
-		}
-		if (r.type === 'OVERRIDE' && lastDenied) breaches.push({ code: 'B4_OVERRIDE_ON_DENY', detail: `record ${r.seq}` })
-		if (r.type === 'STATE' && permit) {
-			for (const s of b.samples ?? []) {
-				if (s.alt < 0.15) continue
-				if (!inPoly(s.pos, permit.geofence)) { breaches.push({ code: 'B1_GEOFENCE', detail: `outside area t=${s.t}` }); break }
-				const nf = permit.noFly.find((z: any) => inPoly(s.pos, z.polygon))
-				if (nf) { breaches.push({ code: 'B1_GEOFENCE', detail: `in ${nf.name} t=${s.t}` }); break }
-				if (s.alt > permit.altCeilingM) { breaches.push({ code: 'B2_ALTITUDE', detail: `${s.alt} m t=${s.t}` }); break }
-			}
-		}
-	}
-	return { intact: issues.length === 0, issues, breaches }
-}
-
 // ---- handler ----------------------------------------------------------------------------
 export const onClaimWindowClosed = (runtime: Runtime<Config>, payload: DecodedLog<ClaimWindowClosedDecoded>): string => {
 	const cfg = runtime.config
 	const { claimId, airframeId, incidentTime } = payload.data
 	runtime.log(`claim #${claimId}: airframe ${airframeId}, incident at ${incidentTime}`)
 
-	// 1. which flight? (asked of the operator's evidence host, then confirmed on 0G Chain)
-	const { chainFlightId } = JSON.parse(fetchText(runtime, `${cfg.evidenceUrl}/lookup?airframe=${airframeId}&t=${incidentTime}`))
-	const flight = decodeFunctionResult({
-		abi: FlightLogABI,
-		functionName: 'flights',
-		data: zgCall(runtime, encodeFunctionData({ abi: FlightLogABI, functionName: 'flights', args: [chainFlightId] })),
-	}) as readonly [Hex, Hex, Address, Hex, bigint, bigint, bigint, Hex, boolean]
-	const [fAirframe, permitHash, operator, , openedAt, closedAt] = flight
-	if (fAirframe !== airframeId || incidentTime < openedAt || incidentTime > closedAt) throw new Error('flight does not match the claim on 0G Chain')
-	const anchors = decodeFunctionResult({
-		abi: FlightLogABI,
-		functionName: 'getAnchors',
-		data: zgCall(runtime, encodeFunctionData({ abi: FlightLogABI, functionName: 'getAnchors', args: [chainFlightId] })),
-	}) as readonly Anchor[]
-	runtime.log(`0G Chain: flight ${chainFlightId}, operator ${operator}, ${anchors.length} anchors`)
+	const readFlight = (id: Hex) =>
+		decodeFunctionResult({ abi: FlightLogABI, functionName: 'flights', data: zgCall(runtime, encodeFunctionData({ abi: FlightLogABI, functionName: 'flights', args: [id] })) }) as readonly [Hex, Hex, Address, Hex, bigint, bigint, bigint, Hex, boolean]
+	const covers = (f: readonly [Hex, Hex, Address, Hex, bigint, bigint, bigint, Hex, boolean]) =>
+		f[0] === airframeId && incidentTime >= f[4] && (f[5] === 0n || incidentTime <= f[5]) // closedAt 0 = never closed (e.g. crashed)
+	const ZERO32 = `0x${'00'.repeat(32)}` as Hex
 
-	// 2. the record, checked against 0G Chain. Each node downloads and checks the full record itself;
-	//    only the compact result goes through consensus (records can be far larger than the 25 KB limit).
-	const anchorsJson = JSON.stringify(anchors.map((x) => ({ seq: x.seq.toString(), head: x.head, storageRoot: x.storageRoot, time: x.time.toString() })))
-	const result = JSON.parse(
-		new cre.capabilities.HTTPClient()
-			.sendRequest(
-				runtime,
-				(sr: HTTPSendRequester, url: string, aj: string, op: string, ph: string) => {
-					const text = httpGet(sr, url)
-					const ev = JSON.parse(text)
-					const as = (JSON.parse(aj) as any[]).map((x) => ({ seq: BigInt(x.seq), head: x.head, storageRoot: x.storageRoot, time: BigInt(x.time) }))
-					const r = judge(ev.records as Rec[], as, op, ph as Hex)
-					return canonical({ records: ev.records.length, recordsHash: keccak256(toBytes(text)), intact: r.intact, issues: r.issues.slice(0, 10), breaches: r.breaches.slice(0, 20) })
-				},
-				consensusIdenticalAggregation<string>(),
-			)(`${cfg.evidenceUrl}/evidence/${chainFlightId}`, anchorsJson, operator, permitHash)
-			.result(),
-	) as { records: number; recordsHash: Hex; intact: boolean; issues: string[]; breaches: { code: string; detail: string }[] }
-	runtime.log(`record: ${result.records} records from 0G Storage, intact=${result.intact}`)
+	// 1. which flight? Ask the operator's evidence host, but never depend on it: a flight still open on
+	//    0G Chain is found directly, and an unreachable host is treated as withholding the record.
+	let result: { records: number; recordsHash: Hex; intact: boolean; issues: string[]; breaches: Breach[] }
+	let chainFlightId: Hex = ZERO32
+	let noFlight = false
+	const look = tryGet(runtime, `${cfg.evidenceUrl}/lookup?airframe=${airframeId}&t=${incidentTime}`)
+	let candidate: Hex | null = look.status === 200 ? (JSON.parse(look.body).chainFlightId as Hex) : null
+	if (candidate && !covers(readFlight(candidate))) {
+		runtime.log(`evidence host named flight ${candidate}, which does not cover the incident on 0G Chain`)
+		candidate = null
+	}
+	if (!candidate) {
+		const open = decodeFunctionResult({ abi: FlightLogABI, functionName: 'openFlightOf', data: zgCall(runtime, encodeFunctionData({ abi: FlightLogABI, functionName: 'openFlightOf', args: [airframeId] })) }) as Hex
+		if (open !== ZERO32 && covers(readFlight(open))) candidate = open
+	}
+	const hostDown = look.status !== 200 && look.status !== 404
 
-	// 3. weather cross-check
-	const wx = JSON.parse(fetchText(runtime, cfg.weatherUrl))
-	const windNow = Number(wx?.current?.wind_speed_10m ?? -1)
-	runtime.log(`weather (Open-Meteo): wind ${windNow} m/s at the permit location`)
+	if (candidate) {
+		chainFlightId = candidate
+		const [, permitHash, operator, , , closedAt] = readFlight(chainFlightId)
+		const anchors = decodeFunctionResult({
+			abi: FlightLogABI,
+			functionName: 'getAnchors',
+			data: zgCall(runtime, encodeFunctionData({ abi: FlightLogABI, functionName: 'getAnchors', args: [chainFlightId] })),
+		}) as readonly Anchor[]
+		runtime.log(`0G Chain: flight ${chainFlightId}, operator ${operator}, ${anchors.length} anchors${closedAt === 0n ? ', NEVER CLOSED' : ''}`)
+
+		// 2. the record, checked against 0G Chain. Each node downloads and checks the full record itself;
+		//    only the compact result goes through consensus. A missing or unreadable record is breach B5.
+		const anchorsJson = JSON.stringify(anchors.map((x) => ({ seq: x.seq.toString(), head: x.head, storageRoot: x.storageRoot, time: x.time.toString() })))
+		result = JSON.parse(
+			new cre.capabilities.HTTPClient()
+				.sendRequest(
+					runtime,
+					(sr: HTTPSendRequester, url: string, aj: string, op: string, ph: string, unclosed: string) => {
+						const withheld = (why: string) => canonical({ records: 0, recordsHash: ZERO32, intact: false, issues: [why], breaches: [{ code: 'B5_RECORD_BROKEN', detail: why }] })
+						let text = ''
+						try {
+							const r = sr.sendRequest({ method: 'GET', url }).result()
+							if (r.statusCode !== 200) return withheld(`record withheld: evidence host answered ${r.statusCode}`)
+							text = Buffer.from(r.body).toString('utf-8')
+						} catch {
+							return withheld('record withheld: evidence host unreachable')
+						}
+						let ev: { records?: Rec[] }
+						try {
+							ev = JSON.parse(text)
+						} catch {
+							return withheld('record unreadable: not valid JSON')
+						}
+						const as = (JSON.parse(aj) as any[]).map((x) => ({ seq: BigInt(x.seq), head: x.head, storageRoot: x.storageRoot, time: BigInt(x.time) }))
+						const j = judge(ev.records ?? [], as, op, ph as Hex, { unclosed: unclosed === '1' })
+						// the take-off time rides along (as a marker) for the independent wind check
+						const takeoff = j.takeoffAt !== null ? [{ code: 'TAKEOFF_AT', detail: `${Math.floor(j.takeoffAt / 1000)}:${j.maxWindMs ?? ''}` }] : []
+						return canonical({ records: ev.records?.length ?? 0, recordsHash: keccak256(toBytes(text)), intact: j.intact, issues: j.issues.slice(0, 10), breaches: [...j.breaches.slice(0, 20), ...takeoff] })
+					},
+					consensusIdenticalAggregation<string>(),
+				)(`${cfg.evidenceUrl}/evidence/${chainFlightId}`, anchorsJson, operator, permitHash, closedAt === 0n ? '1' : '0')
+				.result(),
+		)
+		runtime.log(`record: ${result.records} records from 0G Storage, intact=${result.intact}`)
+	} else if (hostDown) {
+		const why = `record withheld: evidence host ${look.status ? `answered ${look.status}` : 'unreachable'} and no open flight on 0G Chain`
+		result = { records: 0, recordsHash: ZERO32, intact: false, issues: [why], breaches: [{ code: 'B5_RECORD_BROKEN', detail: why }] }
+	} else {
+		noFlight = true
+		result = { records: 0, recordsHash: ZERO32, intact: false, issues: ['no sealed flight covers the incident time'], breaches: [] }
+	}
+
+	// 3. independent wind at the take-off hour (Open-Meteo hourly; a past hour reads the same on every node)
+	const tk = result.breaches.find((b) => b.code === 'TAKEOFF_AT')
+	result.breaches = result.breaches.filter((b) => b.code !== 'TAKEOFF_AT')
+	let windAt: number | null = null
+	if (tk) {
+		const [t, max] = tk.detail.split(':').map(Number)
+		const wx = tryGet(runtime, cfg.weatherUrl)
+		if (wx.status === 200) {
+			const w = windBreach(JSON.parse(wx.body)?.hourly, t, Number.isFinite(max) ? max : undefined)
+			windAt = w.wind
+			if (w.breach) result.breaches.push(w.breach)
+		}
+	}
+	runtime.log(`weather (Open-Meteo): ${windAt === null ? 'unavailable' : `${windAt} m/s at the take-off hour`}`)
 
 	// 4. verdict
 	const verdict = result.breaches.length ? 1 : 2
-	const breachCode = stringToHex((result.breaches[0]?.code ?? 'NONE').slice(0, 31), { size: 32 })
-	const summary = { claimId: claimId.toString(), chainFlightId, recordsHash: result.recordsHash, verdict, breaches: result.breaches, issues: result.issues, windNow }
+	const breachCode = stringToHex((result.breaches[0]?.code ?? (noFlight ? 'NO_RECORDED_FLIGHT' : 'NONE')).slice(0, 31), { size: 32 })
+	const summary = { claimId: claimId.toString(), chainFlightId, recordsHash: result.recordsHash, verdict, breaches: result.breaches, issues: result.issues, windAt, noFlight }
 	const reportHash = keccak256(toBytes(canonical(summary)))
 	for (const b of result.breaches) runtime.log(`  ${b.code}: ${b.detail}`)
-	runtime.log(`verdict: ${verdict === 1 ? 'BREACH -> pay the victim' : 'REVIEW -> hold for the insurer'}`)
+	runtime.log(`verdict: ${verdict === 1 ? 'BREACH -> pay the victim' : noFlight ? 'REVIEW -> no recorded flight, a human decides' : 'REVIEW -> hold for the insurer'}`)
 
 	// 5. report to the Arc escrow (only the CRE forwarder can call onReport)
 	const network = getNetwork({ chainFamily: 'evm', chainSelectorName: cfg.arcChain, isTestnet: true })

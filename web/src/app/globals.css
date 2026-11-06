@@ -33,10 +33,13 @@
   --bad: #ef4444;
 }
 
-html,
+html {
+  background: #04050c;
+}
+/* body stays transparent: a body background would paint over the live colour field (-z-10) */
 body {
-  background: #f4f1ea;
-  color: #15171a;
+  background: transparent;
+  color: #e8e9ff;
 }
 
 ::selection {
@@ -251,3 +254,89 @@ body {
   .reveal, .reveal-l { opacity: 1; filter: none; transform: none; transition: none; }
   .station, .stamp, .rowin, .link-in, .seal-pulse, .crack, .taint, .coin, .coin-lr, .sweep, .boot, .blink, .rise, .route-draw, .rotor { animation: none !important; }
 }
+
+/* ---- landing hero: live blurred colour field + wordmark ---------------------------------------- */
+.blob { position: absolute; border-radius: 9999px; filter: blur(90px); will-change: transform; transform: translateZ(0); }
+.blob-a { width: 70vw; height: 70vw; left: -20vw; top: -10vw; background: #0b1650; animation: drift-a 26s ease-in-out infinite alternate; }
+.blob-b { width: 55vw; height: 55vw; left: 25vw; top: 5vw; background: #4c47b0; opacity: 0.85; animation: drift-b 22s ease-in-out infinite alternate; }
+.blob-c { width: 45vw; height: 45vw; right: -12vw; top: -14vw; background: #d4d7f5; opacity: 0.5; animation: drift-c 18s ease-in-out infinite alternate; }
+.blob-d { width: 50vw; height: 40vw; right: -8vw; bottom: -18vw; background: #6e6230; opacity: 0.55; animation: drift-d 24s ease-in-out infinite alternate; }
+@keyframes drift-a { to { transform: translate(8vw, 6vw) scale(1.1); } }
+@keyframes drift-b { to { transform: translate(-10vw, 8vw) scale(0.92); } }
+@keyframes drift-c { to { transform: translate(-6vw, 10vw) scale(1.15); } }
+@keyframes drift-d { to { transform: translate(-12vw, -6vw) scale(1.08); } }
+@keyframes sp-letter { from { opacity: 0; transform: translateY(0.4em); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+.sp-letter { display: inline-block; animation: sp-letter 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; animation-delay: var(--d, 0ms); }
+@keyframes hero-fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.hero-fade { animation: hero-fade 0.8s ease both; animation-delay: var(--d, 0ms); }
+.mark-rotor { transform-box: fill-box; transform-origin: center; animation: mark-spin 2.4s linear infinite; stroke-dasharray: 12 4; }
+@keyframes mark-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .blob, .sp-letter, .hero-fade, .mark-rotor { animation: none !important; }
+}
+
+/* ---- site theme: glass panels on the live colour field, lavender accents ---------------------- */
+.cockpit .bg-\[\#fffdf8\], .cockpit .bg-\[\#fffdf8\]\/95, .cockpit .bg-\[\#fffdf8\]\/90, .cockpit .bg-\[\#fffdf8\]\/80, .cockpit .bg-\[\#fffdf8\]\/70 { background-color: rgba(12,14,42,0.66); backdrop-filter: blur(16px); }
+.cockpit .bg-\[\#f6f3ec\], .cockpit .bg-\[\#f6f3ec\]\/95, .cockpit .bg-\[\#f6f3ec\]\/90, .cockpit .bg-\[\#f6f3ec\]\/80, .cockpit .bg-\[\#f6f3ec\]\/70 { background-color: rgba(30,33,80,0.6); backdrop-filter: blur(16px); }
+.cockpit .bg-\[\#faf8f3\], .cockpit .bg-\[\#faf8f3\]\/95, .cockpit .bg-\[\#faf8f3\]\/90, .cockpit .bg-\[\#faf8f3\]\/80, .cockpit .bg-\[\#faf8f3\]\/70 { background-color: rgba(12,14,42,0.5); backdrop-filter: blur(16px); }
+.cockpit .bg-\[\#faf6ee\], .cockpit .bg-\[\#faf6ee\]\/95, .cockpit .bg-\[\#faf6ee\]\/90, .cockpit .bg-\[\#faf6ee\]\/80, .cockpit .bg-\[\#faf6ee\]\/70 { background-color: rgba(20,22,58,0.62); backdrop-filter: blur(16px); }
+.cockpit .bg-\[\#ebe6db\], .cockpit .bg-\[\#ebe6db\]\/95, .cockpit .bg-\[\#ebe6db\]\/90, .cockpit .bg-\[\#ebe6db\]\/80, .cockpit .bg-\[\#ebe6db\]\/70 { background-color: rgba(20,22,58,0.62); backdrop-filter: blur(16px); }
+.cockpit .bg-\[\#f4f1ea\], .cockpit .bg-\[\#f4f1ea\]\/95, .cockpit .bg-\[\#f4f1ea\]\/90, .cockpit .bg-\[\#f4f1ea\]\/80, .cockpit .bg-\[\#f4f1ea\]\/70 { background-color: transparent; }
+.cockpit .bg-\[\#101822\], .cockpit .bg-\[\#101822\]\/95, .cockpit .bg-\[\#101822\]\/90, .cockpit .bg-\[\#101822\]\/80, .cockpit .bg-\[\#101822\]\/70 { background-color: rgba(20,22,58,0.62); backdrop-filter: blur(16px); }
+.cockpit .bg-\[\#0b1017\], .cockpit .bg-\[\#0b1017\]\/95, .cockpit .bg-\[\#0b1017\]\/90, .cockpit .bg-\[\#0b1017\]\/80, .cockpit .bg-\[\#0b1017\]\/70 { background-color: rgba(6,8,26,0.45); }
+.cockpit .bg-\[\#16212d\], .cockpit .bg-\[\#16212d\]\/95, .cockpit .bg-\[\#16212d\]\/90, .cockpit .bg-\[\#16212d\]\/80, .cockpit .bg-\[\#16212d\]\/70 { background-color: rgba(30,33,80,0.6); backdrop-filter: blur(16px); }
+.cockpit .bg-\[\#111821\], .cockpit .bg-\[\#111821\]\/95, .cockpit .bg-\[\#111821\]\/90, .cockpit .bg-\[\#111821\]\/80, .cockpit .bg-\[\#111821\]\/70 { background-color: rgba(20,22,58,0.62); backdrop-filter: blur(16px); }
+.cockpit .bg-\[\#0b0f14\], .cockpit .bg-\[\#0b0f14\]\/95, .cockpit .bg-\[\#0b0f14\]\/90, .cockpit .bg-\[\#0b0f14\]\/80, .cockpit .bg-\[\#0b0f14\]\/70 { background-color: rgba(20,22,58,0.62); backdrop-filter: blur(16px); }
+.cockpit .bg-\[\#eef3fc\], .cockpit .bg-\[\#eef3fc\]\/95, .cockpit .bg-\[\#eef3fc\]\/90, .cockpit .bg-\[\#eef3fc\]\/80, .cockpit .bg-\[\#eef3fc\]\/70 { background-color: rgba(147,163,255,0.12); }
+.cockpit .bg-\[\#f5f8ff\], .cockpit .bg-\[\#f5f8ff\]\/95, .cockpit .bg-\[\#f5f8ff\]\/90, .cockpit .bg-\[\#f5f8ff\]\/80, .cockpit .bg-\[\#f5f8ff\]\/70 { background-color: rgba(147,163,255,0.08); }
+.cockpit .border-\[\#e3ded3\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-\[\#d9d3c6\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-\[\#ece7dc\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-\[\#cfc8ba\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-\[\#1f2b38\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-\[\#27384a\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-\[\#22303f\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-\[\#2a3a4c\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-l-\[\#e3ded3\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-l-\[\#d9d3c6\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-l-\[\#ece7dc\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-l-\[\#cfc8ba\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-l-\[\#1f2b38\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-l-\[\#27384a\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-l-\[\#22303f\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-l-\[\#2a3a4c\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-t-\[\#e3ded3\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-t-\[\#d9d3c6\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-t-\[\#ece7dc\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-t-\[\#cfc8ba\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-t-\[\#1f2b38\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-t-\[\#27384a\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-t-\[\#22303f\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-t-\[\#2a3a4c\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-b-\[\#e3ded3\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-b-\[\#d9d3c6\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-b-\[\#ece7dc\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-b-\[\#cfc8ba\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-b-\[\#1f2b38\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-b-\[\#27384a\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-b-\[\#22303f\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .border-b-\[\#2a3a4c\] { border-color: rgba(255,255,255,0.1); }
+.cockpit .bg-\[\#15171a\] { background-color: #f5f6ff; }
+.cockpit .bg-\[\#15171a\].text-\[\#f4f1ea\], .cockpit .bg-\[\#15171a\] .text-\[\#f4f1ea\] { color: #0a0d24; }
+.cockpit .hover\:bg-\[\#2b2e33\]:hover, .cockpit .hover\:bg-\[\#33363b\]:hover { background-color: #ffffff; }
+.cockpit .text-\[\#c2410c\] { color: #b9bdff; }
+.cockpit .text-\[\#15171a\] { color: #f5f6ff; }
+.cockpit .text-\[\#55595f\], .cockpit .text-\[\#45484e\], .cockpit .text-\[\#33363b\] { color: #e1e3fa; }
+.cockpit .text-\[\#8a8d93\], .cockpit .text-\[\#6b6f76\] { color: #b9bce6; }
+.cockpit .bg-\[\#22d3ee\] { background-color: #f5f6ff; color: #0a0d24; }
+.cockpit .hover\:bg-\[\#67e8f9\]:hover { background-color: #ffffff; }
+.cockpit .decoration-\[\#c2410c\], .cockpit .decoration-\[\#7c5cff\] { text-decoration-color: #b9bdff; }
+.cockpit .divide-\[\#ece7dc\] > * + * { border-color: rgba(255,255,255,0.08); }
+.cockpit ::selection { background: rgba(185,189,255,0.35); }
+.cockpit .bg-\[\#e3ded3\] { background-color: rgba(255,255,255,0.1); }
+/* overlays sitting on the bright 3D city need dark glass to stay readable */
+.cockpit .absolute.bg-\[\#fffdf8\]\/95, .cockpit .absolute .bg-\[\#fffdf8\]\/95, .cockpit .absolute.bg-\[\#fffdf8\] { background-color: rgba(6,8,26,0.72); backdrop-filter: blur(10px); }
+
+/* ---- type + layout ---------------------------------------------------------------------------- */
+h1, h2, h3, .font-display { font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif; letter-spacing: -0.02em; }
+body { overflow-x: clip; }

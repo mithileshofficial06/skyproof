@@ -1,0 +1,86 @@
+================================================================================================
+SKYPROOF FLIGHT SUMMARY (plain English)
+================================================================================================
+Flight ID      : SKY-001-geofence_breach-1793915293955
+Drone          : SKY-001
+Flown          : Thu, 05 Nov 2026 21:48:16 GMT
+Test scenario  : Cheating operator: the safety gate is switched off and the drone flies into a no-fly zone without asking 0G.
+Operator wallet: 0x69A5160E8bf27A2a9D8d17eaff0De079CfdFA12A
+
+This summary is generated from the drone's sealed black box: every decision, position and action
+was signed, encrypted and uploaded to 0G Storage during the flight, and fingerprinted on 0G Chain.
+It is a readable view of that record; the sealed record itself is the evidence.
+
+------------------------------------------------------------------------------------------------
+1. THE RULES THE DRONE AGREED TO (signed flight permit, before take-off)
+------------------------------------------------------------------------------------------------
+  - Fly only inside the permitted area, never inside: AIRPORT.
+  - Stay under 1.6 m (simulator scale).
+  - Do not take off if the wind is above 9 m/s.
+  - Keep at least 15% battery in reserve.
+  - Before every take-off, reroute, drop and landing, ask 0G and act only on a fresh ALLOW.
+
+------------------------------------------------------------------------------------------------
+2. WHAT HAPPENED, STEP BY STEP
+------------------------------------------------------------------------------------------------
+    0.0 s  Flight opened under the signed permit (permit fingerprint 0x9ffe73823e5b30df...).
+    0.0 s  ACTION: the drone did take off WITHOUT any approval  <-- rule B3
+    0.1 s  ACTION: the drone did fly to the next waypoint WITHOUT any approval  <-- rule B3
+    0.3 s  ACTION: the drone did drop the package WITHOUT any approval  <-- rule B3
+    0.3 s  ACTION: the drone did fly to the next waypoint WITHOUT any approval  <-- rule B3
+    0.5 s  ACTION: the drone did land WITHOUT any approval  <-- rule B3
+    0.6 s  Flight ended. Battery left: 92%.
+
+------------------------------------------------------------------------------------------------
+3. THE INDEPENDENT JUDGE'S CHECKS (Chainlink workflow, objective rules)
+------------------------------------------------------------------------------------------------
+  [BROKEN] B1  Stayed inside the permitted area and out of every no-fly zone  (2x)
+  [  OK  ] B2  Stayed under the height ceiling
+  [BROKEN] B3  Every action (take-off, reroute, drop, land) was approved by 0G first  (5x)
+  [  OK  ] B4  Nobody overrode a 0G refusal
+  [  OK  ] B5  The record is complete and unedited (matches the fingerprints on 0G Chain)
+  [  OK  ] B6  Did not take off in wind above the permit limit
+           - B3_UNAPPROVED_ACTION: TAKEOFF executed without an approved 0G decision
+           - B3_UNAPPROVED_ACTION: REROUTE executed without an approved 0G decision
+           - B1_GEOFENCE: inside no-fly zone AIRPORT at t=6s, pos [1.717,1.444]
+           - B3_UNAPPROVED_ACTION: DROP executed without an approved 0G decision
+           - B3_UNAPPROVED_ACTION: REROUTE executed without an approved 0G decision
+           - B1_GEOFENCE: inside no-fly zone AIRPORT at t=13.5s, pos [2.536,2.144]
+           - B3_UNAPPROVED_ACTION: LAND executed without an approved 0G decision
+
+------------------------------------------------------------------------------------------------
+4. IS THIS RECORD GENUINE?
+------------------------------------------------------------------------------------------------
+  YES. 12 records; every fingerprint matches the anchors sealed on 0G Chain.
+  Where the evidence lives:
+    - records 0-11: 0G Storage root 0x7a1b2f35cde937562c7e5527e0e0cac9d89e164eef973d05bad2531e77265752
+      anchored on 0G Chain: https://chainscan-galileo.0g.ai/tx/0x967cec8472d29c4249680196e12bad28f4b9645e660ec0916145df168829382c
+    - flight opened on 0G Chain: https://chainscan-galileo.0g.ai/tx/0x8bd78aef9504d6d632674231c022d8d86f64dc87f4cf21d8805f417f291d348b
+    - look up any storage root at https://storagescan-galileo.0g.ai
+
+------------------------------------------------------------------------------------------------
+5. VERDICT AND MONEY
+------------------------------------------------------------------------------------------------
+  BREACH: the sealed record shows at least one objective rule was broken.
+  If a victim files a claim, the Chainlink judge pays them automatically from the operator's
+  USDC bond on Arc (up to the payout cap), and refunds their 1 USDC claim deposit.
+  Claims filed against this flight: #1 (Paid, BREACH).
+
+------------------------------------------------------------------------------------------------
+6. FOR AN INSURER, IN ONE MINUTE
+------------------------------------------------------------------------------------------------
+  - 0 decisions were requested; 0 were answered by 0G Private Computer.
+  - 5 action(s) happened WITHOUT 0G's approval.
+  - The record is intact: nobody, including the operator, has changed it since the flight.
+  - Outcome: operator at fault on objective rules; automatic payout applies.
+
+------------------------------------------------------------------------------------------------
+GLOSSARY
+------------------------------------------------------------------------------------------------
+  0G Private Computer : the AI service that looks at the drone's camera and answers ALLOW / DENY.
+  0G Storage          : where the encrypted black box is uploaded during the flight.
+  0G Chain            : where each part of the record is fingerprinted, so edits are detectable.
+  Chainlink judge     : an independent workflow that checks the record and the rules, then rules.
+  Arc / USDC bond     : money the operator locks in advance; it pays victims on a BREACH.
+  Safety fallback     : a pre-approved safe action when 0G can't answer; never a faked approval.
+================================================================================================

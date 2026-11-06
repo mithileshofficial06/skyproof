@@ -4,6 +4,6 @@
   "zgRpc": "https://evmrpc-testnet.0g.ai",
   "flightLog": "0x2E6F0f6f3121e3aA7984ffC292f80E75c937cBa5",
   "evidenceUrl": "http://localhost:8788",
-  "weatherUrl": "https://api.open-meteo.com/v1/forecast?latitude=19.076&longitude=72.8777&current=wind_speed_10m&wind_speed_unit=ms",
+  "weatherUrl": "https://api.open-meteo.com/v1/forecast?latitude=19.076&longitude=72.8777&hourly=wind_speed_10m&wind_speed_unit=ms&past_days=3&forecast_days=1&timezone=GMT",
   "gasLimit": "600000"
 }
