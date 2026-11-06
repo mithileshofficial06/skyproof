@@ -1,11 +1,13 @@
 "use client";
 // /experience: the "Two Truths" scroll story (specs/05-uiux.md). DOM sections scroll over a fixed 3D canvas;
-// both read the same store. Sections are placeholders until their tasks (UI-3..UI-9) land.
+// both read the same store.
 import { useEffect } from "react";
 import { ModeBadge } from "@/components/experience/ModeBadge";
 import { ScrollProvider } from "@/components/experience/ScrollProvider";
 import { Stage3D } from "@/components/experience/Stage3D";
+import { StationInfo } from "@/components/experience/StationInfo";
 import { TamperPanel } from "@/components/experience/TamperPanel";
+import { VerifyPanel } from "@/components/experience/VerifyPanel";
 import { source } from "@/lib/data/adapter";
 import { useUI } from "@/lib/store";
 import { X } from "@/lib/tokens";
@@ -93,6 +95,8 @@ export default function Experience() {
                 </>
               )}
               {s.id === "problem" && <ProblemFacts />}
+              {(s.id === "zerog" || s.id === "chainlink" || s.id === "arc") && <StationInfo id={s.id} />}
+              {s.id === "verify" && <VerifyPanel />}
             </div>
           </section>
         ))}
