@@ -9,7 +9,7 @@ import { deriveFx } from "@/lib/fx";
 
 const Scene3D = dynamic(() => import("@/components/Scene3D"), { ssr: false });
 const WS_URL = process.env.NEXT_PUBLIC_OFFICER_WS || "ws://localhost:8787";
-const DELAY_MS = 220; // draw slightly in the past so there are always two samples to blend between
+const LAG_S = 0.25; // draw slightly in the past (sim time) so there are always two samples to blend between
 
 interface Seg {
   fromSeq: number;
@@ -45,7 +45,8 @@ export default function Live() {
   const [published, setPublished] = useState<string | null>(null);
   const seq = useRef(0);
   const tNow = useRef(0);
-  const buf = useRef<{ w: number; s: LiveState }[]>([]);
+  const buf = useRef<LiveState[]>([]);
+  const clock = useRef<{ t: number; w: number } | null>(null);
   const lastHud = useRef(0);
   const lastTrail = useRef(0);
 
@@ -84,6 +85,7 @@ export default function Live() {
             setSegs([]);
             setPublished(null);
             buf.current = [];
+            clock.current = null;
             seq.current = 0;
             push({ kind: "permit", title: `Flight opened (${m.scenario})`, detail: `permit ${String(m.permitHash).slice(0, 18)}…`, status: "info" });
             break;
@@ -91,7 +93,9 @@ export default function Live() {
             // keep every sample for smooth motion; refresh the readouts and trail at a calm rate
             const now = performance.now();
             tNow.current = m.state.t;
-            buf.current.push({ w: now, s: m.state });
+            const b = buf.current;
+            if (b.length && m.state.t <= b[b.length - 1].t) b.length = 0; // sim restarted
+            b.push(m.state);
             if (buf.current.length > 90) buf.current.splice(0, buf.current.length - 90);
             if (now - lastHud.current > 150) {
               lastHud.current = now;
@@ -157,21 +161,39 @@ export default function Live() {
     };
   }, []);
 
-  // blend the two telemetry samples around (now - DELAY_MS): steady motion with no jumps
+  // Smooth playback on the sim's own clock: a local clock runs at real speed and is nudged towards
+  // (newest sample - LAG_S), so network jitter never shows. Between samples the path is a cubic
+  // Hermite curve through positions and velocities: no corners, no speed pumping.
   const getDrone = useCallback(() => {
     const b = buf.current;
     if (!b.length) return null;
-    const rt = performance.now() - DELAY_MS;
+    const now = performance.now();
+    const newest = b[b.length - 1].t;
+    const target = newest - LAG_S;
+    let c = clock.current;
+    if (!c || Math.abs(target - c.t) > 2) c = clock.current = { t: target, w: now };
+    else {
+      const err = target - c.t;
+      c.t = Math.min(newest, c.t + ((now - c.w) / 1000) * Math.min(4, Math.max(0.2, 1 + err * 1.5)));
+      c.w = now;
+    }
     let i = b.length - 1;
-    while (i > 0 && b[i - 1].w > rt) i--;
-    const a = b[Math.max(0, i - 1)];
-    const c = b[i];
-    const k = c.w === a.w ? 1 : Math.min(1, Math.max(0, (rt - a.w) / (c.w - a.w)));
-    const mix = (x: number, y: number) => x + (y - x) * k;
+    while (i > 0 && b[i - 1].t > c.t) i--;
+    const s0 = b[Math.max(0, i - 1)];
+    const s1 = b[i];
+    const h = s1.t - s0.t;
+    if (h <= 1e-6 || c.t >= s1.t) return { pos: s1.pos, alt: s1.alt, vel: s1.vel, status: "ok" as const };
+    const u = Math.min(1, Math.max(0, (c.t - s0.t) / h));
+    const lin = h > 0.4; // after a gap, don't trust velocities
+    const u2 = u * u;
+    const u3 = u2 * u;
+    const [a0, a1, a2, a3] = lin ? [1 - u, 0, u, 0] : [2 * u3 - 3 * u2 + 1, u3 - 2 * u2 + u, -2 * u3 + 3 * u2, u3 - u2];
+    const H = (p0: number, v0: number, p1: number, v1: number) => a0 * p0 + a1 * h * v0 + a2 * p1 + a3 * h * v1;
+    const mix = (x: number, y: number) => x + (y - x) * u;
     return {
-      pos: [mix(a.s.pos[0], c.s.pos[0]), mix(a.s.pos[1], c.s.pos[1])] as XY,
-      alt: mix(a.s.alt, c.s.alt),
-      vel: [mix(a.s.vel[0], c.s.vel[0]), mix(a.s.vel[1], c.s.vel[1]), mix(a.s.vel[2], c.s.vel[2])] as [number, number, number],
+      pos: [H(s0.pos[0], s0.vel[0], s1.pos[0], s1.vel[0]), H(s0.pos[1], s0.vel[1], s1.pos[1], s1.vel[1])] as XY,
+      alt: H(s0.alt, s0.vel[2], s1.alt, s1.vel[2]),
+      vel: [mix(s0.vel[0], s1.vel[0]), mix(s0.vel[1], s1.vel[1]), mix(s0.vel[2], s1.vel[2])] as [number, number, number],
       status: "ok" as const,
     };
   }, []);
@@ -180,6 +202,8 @@ export default function Live() {
     [events, segs],
   );
 
+  const asked = events.filter((e) => e.kind === "decision" || e.kind === "situation");
+  const lat = asked.map((e) => e.latencyMs ?? 0).filter((x) => x > 0);
   const last = events[events.length - 1];
   const status = last?.status === "breach" ? "breach" : last?.status === "deny" ? "deny" : last?.status === "warn" ? "warn" : "ok";
   const fx = state ? deriveFx(events, state.t, () => ({ pos: state.pos, alt: state.alt }), !!permit && state.windMs > permit.maxWindMs) : undefined;
@@ -217,6 +241,22 @@ cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
             ) : (
               <div className="grid h-full place-items-center text-sm text-[#8a8d93]">Waiting for the officer…</div>
             )}
+            {permit && state && (
+              <div className={cx("pointer-events-none absolute left-3 flex gap-px overflow-hidden rounded-md border border-[#d9d3c6] bg-[#fffdf8]/95 text-[#15171a] shadow-sm", netDown ? "top-10" : "top-3")}>
+                {[
+                  ["ALT", `${state.alt.toFixed(2)} m`, state.alt > permit.altCeilingM],
+                  ["SPEED", `${Math.hypot(state.vel[0], state.vel[1]).toFixed(2)} m/s`, false],
+                  ["BATTERY", `${Math.round(state.battery * 100)}%`, state.battery < permit.minBatteryReserve + 0.2],
+                  ["WIND", `${state.windMs.toFixed(0)} m/s`, state.windMs > permit.maxWindMs],
+                  ["0G LINK", netDown ? "CUT" : "LIVE", netDown],
+                ].map(([k, val, bad]) => (
+                  <div key={k as string} className="px-3 py-1.5">
+                    <div className="text-[9px] font-medium uppercase tracking-[0.14em] text-[#8a8d93]">{k}</div>
+                    <div className={cx("font-mono text-sm tabular-nums", bad ? "text-[#b91c1c]" : "text-[#15171a]")}>{val}</div>
+                  </div>
+                ))}
+              </div>
+            )}
             {netDown && <div className="pointer-events-none absolute inset-x-0 top-0 bg-[#b91c1c] py-1.5 text-center text-xs font-semibold tracking-wide text-[#fff7f0]">LINK TO 0G CUT · the drone may not act until a safe stop</div>}
             {closed && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-[#d9d3c6] bg-[#fffdf8] px-4 py-1.5 text-xs text-[#3b2fa8]">
@@ -230,9 +270,9 @@ cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
           </div>
           <div className="grid items-start gap-4 md:grid-cols-[1fr_320px]">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              <Stat label="Altitude" value={`${(state?.alt ?? 0).toFixed(2)} m`} tone={permit && state && state.alt > permit.altCeilingM ? "bad" : undefined} />
-              <Stat label="Battery" value={`${Math.round((state?.battery ?? 1) * 100)}%`} tone={state && permit && state.battery < permit.minBatteryReserve + 0.2 ? "warn" : undefined} />
-              <Stat label="Wind" value={`${(state?.windMs ?? 0).toFixed(0)} m/s`} tone={state && permit && state.windMs > permit.maxWindMs ? "bad" : undefined} />
+              <Stat label="0G decisions" value={`${asked.length}`} />
+              <Stat label="Avg 0G answer" value={lat.length ? `${(lat.reduce((a, b) => a + b, 0) / lat.length / 1000).toFixed(1)} s` : "–"} />
+              <Stat label="Sealed on 0G Chain" value={`${segs.length} seg${segs.length === 1 ? "" : "s"}`} />
               <Stat label="Sim time" value={`${(state?.t ?? 0).toFixed(1)} s`} />
             </div>
             <Panel title="What the drone saw" className="overflow-hidden">

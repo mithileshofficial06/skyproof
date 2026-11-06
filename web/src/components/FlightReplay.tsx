@@ -18,7 +18,6 @@ export default function FlightReplay({ flight, autoplay = true, compact = false 
   const [t, setT] = useState(0);
   const [playing, setPlaying] = useState(autoplay);
   const [speed, setSpeed] = useState(compact ? 2 : 1);
-  const [follow, setFollow] = useState(true);
   const last = useRef<number | null>(null);
   const beats = useMemo(() => buildBeats(tl), [tl]);
   const [beat, setBeat] = useState<Beat | null>(null);
@@ -92,7 +91,7 @@ export default function FlightReplay({ flight, autoplay = true, compact = false 
 
   const scenePane = (
     <div className={cx("relative overflow-hidden rounded-lg border border-[#d9d3c6] bg-[#dfe7ec]", compact ? "h-full" : "h-[62vh] min-h-[460px]")}>
-      <Scene3D permit={tl.permit} drone={{ pos: s.pos, alt: s.alt, vel: s.vel, status }} trail={trail} people={scene.people} props={scene.props} fx={beat ? { ...fx, label: undefined } : fx} follow={follow} compact={compact} focus={beat?.focus ?? null} />
+      <Scene3D permit={tl.permit} drone={{ pos: s.pos, alt: s.alt, vel: s.vel, status }} trail={trail} people={scene.people} props={scene.props} fx={beat ? { ...fx, label: undefined } : fx} compact={compact} focus={beat?.focus ?? null} />
       {beat && (
         <div className="absolute inset-x-0 top-14 z-10 mx-auto w-[min(520px,90%)] rounded-lg border border-[#d9d3c6] bg-[#fffdf8] p-4 shadow-[0_10px_30px_rgba(20,22,26,0.18)]">
           <div className="flex items-center justify-between">
@@ -133,16 +132,6 @@ export default function FlightReplay({ flight, autoplay = true, compact = false 
                 <span className="w-11 shrink-0 font-mono text-[10px] text-[#8a8d93]">{e.t.toFixed(1)}s</span>
                 <span className="truncate text-[#15171a]">{e.title}</span>
               </div>
-            ))}
-          </div>
-          <div className="absolute right-3 top-3 flex overflow-hidden rounded-md border border-[#d9d3c6] bg-[#fffdf8] text-xs">
-            {[
-              [true, "Follow drone"],
-              [false, "Overview"],
-            ].map(([f, l]) => (
-              <button key={l as string} onClick={() => setFollow(f as boolean)} className={cx("px-3 py-1.5", follow === f ? "bg-[#15171a] text-[#f4f1ea]" : "text-[#33363b] hover:bg-[#f6f3ec]")}>
-                {l}
-              </button>
             ))}
           </div>
         </>
