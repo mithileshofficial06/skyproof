@@ -11,6 +11,7 @@ import { X } from "@/lib/tokens";
 import { Drone } from "./Drone";
 import { FlightRig } from "./FlightRig";
 import { BlackBox } from "./BlackBox";
+import { Stations } from "./Stations";
 import { TelemetryGroup } from "./TelemetryGroup";
 
 function Stage() {
@@ -20,6 +21,7 @@ function Stage() {
       <FlightRig>{(climb) => <Drone climb={climb} />}</FlightRig>
       <TelemetryGroup />
       <BlackBox />
+      <Stations />
     </group>
   );
 }
