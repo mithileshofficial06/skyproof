@@ -1,13 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import type { FlightFile, FlightIndexEntry } from "./flight";
+import { flightFile, flightIndex } from "./siteData";
 
 export function useIndex() {
   const [data, setData] = useState<FlightIndexEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    fetch("/data/flights/index.json")
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+    flightIndex()
       .then(setData)
       .catch((e) => setError(String(e.message ?? e)));
   }, []);
@@ -20,7 +20,7 @@ export function useFlight(id: string | null) {
   useEffect(() => {
     if (!id) return;
     setData(null);
-    fetch(`/data/flights/${id}.json`)
+    flightFile(`${id}.json`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
       .then(setData)
       .catch((e) => setError(String(e.message ?? e)));

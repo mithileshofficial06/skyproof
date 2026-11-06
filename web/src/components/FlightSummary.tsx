@@ -3,12 +3,13 @@
 // and anyone new to SkyProof. Collapsible; downloadable as text.
 import { useEffect, useState } from "react";
 import { Panel } from "./ui";
+import { flightFile } from "@/lib/siteData";
 
 export function FlightSummary({ flightId }: { flightId: string }) {
   const [text, setText] = useState<string | null>(null);
   const [open, setOpen] = useState(true);
   useEffect(() => {
-    fetch(`/data/flights/${flightId}.summary.txt`)
+    flightFile(`${flightId}.summary.txt`)
       .then((r) => (r.ok ? r.text() : null))
       .then(setText)
       .catch(() => setText(null));
@@ -16,10 +17,12 @@ export function FlightSummary({ flightId }: { flightId: string }) {
   if (!text) return null;
   return (
     <Panel
+      className="scroll-mt-24"
+      id="summary"
       title="Plain-English summary"
       right={
         <div className="flex items-center gap-2">
-          <a href={`/data/flights/${flightId}.summary.txt`} download className="rounded-md border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-[#f5f6ff] hover:bg-white/20">
+          <a href={`data:text/plain;charset=utf-8,${encodeURIComponent(text)}`} download={`${flightId}.summary.txt`} className="rounded-md border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-[#f5f6ff] hover:bg-white/20">
             Download .txt
           </a>
           <button onClick={() => setOpen((o) => !o)} className="rounded-md border border-white/20 bg-white/10 px-2.5 py-1 text-xs font-semibold text-[#f5f6ff] hover:bg-white/20">

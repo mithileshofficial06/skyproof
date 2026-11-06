@@ -1,0 +1,117 @@
+================================================================================================
+SKYPROOF FLIGHT SUMMARY (plain English)
+================================================================================================
+Flight ID      : SKY-001-people_below-1793990913726
+Drone          : SKY-001
+Flown          : Fri, 06 Nov 2026 18:48:47 GMT
+Test scenario  : Person in the drop zone: someone walks into the delivery spot while the drone is about to drop.
+Operator wallet: 0x69A5160E8bf27A2a9D8d17eaff0De079CfdFA12A
+
+This summary is generated from the drone's sealed black box: every decision, position and action
+was signed, encrypted and uploaded to 0G Storage during the flight, and fingerprinted on 0G Chain.
+It is a readable view of that record; the sealed record itself is the evidence.
+
+------------------------------------------------------------------------------------------------
+1. THE RULES THE DRONE AGREED TO (signed flight permit, before take-off)
+------------------------------------------------------------------------------------------------
+  - Fly only inside the permitted area, never inside: AIRPORT.
+  - Stay under 1.6 m (simulator scale).
+  - Do not take off if the wind is above 9 m/s.
+  - Keep at least 15% battery in reserve.
+  - Before every take-off, reroute, drop and landing, ask 0G and act only on a fresh ALLOW.
+
+------------------------------------------------------------------------------------------------
+2. WHAT HAPPENED, STEP BY STEP
+------------------------------------------------------------------------------------------------
+    0.0 s  Flight opened under the signed permit (permit fingerprint 0x9ffe73823e5b30df...).
+    2.3 s  ASKED 0G: may the drone take off?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No image provided, assume
+        safe for takeoff."
+        0G request ID 636aa85d-870a-4e57-a394-c69dfe427fa9, model qwen3.8-flash, answered in 2.3 s.
+    2.3 s  ACTION: the drone did take off WITH an approved 0G decision.
+    6.1 s  ASKED 0G: may the drone fly to the next waypoint?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No obvious hazards visible
+        in the reroute path."
+        0G request ID 25cd5b42-d637-4b50-a442-9559fa75fc2c, model qwen3.8-flash, answered in 1.8 s.
+    6.1 s  ACTION: the drone did fly to the next waypoint WITH an approved 0G decision.
+   13.9 s  ASKED 0G: may the drone fly to the next waypoint?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No obvious hazards visible
+        in the reroute path."
+        0G request ID 9ca7dab4-2436-4a77-98f8-d66c324ecae1, model qwen3.8-flash, answered in 2.5 s.
+   13.9 s  ACTION: the drone did fly to the next waypoint WITH an approved 0G decision.
+   18.6 s  Scene: pedestrian entered the drop zone.
+   21.6 s  ASKED 0G: may the drone drop the package?
+        Answer: DENY (PEOPLE_BELOW), decided by 0G, made stricter by the drone's local
+        person detector. Reason: "0G allowed, but detector sees 1 person(s)"
+        0G request ID 6740330d-7b91-4ba2-913e-063f44bd6bf7, model qwen3.8-flash, answered in 2.9 s.
+   21.6 s  Scene: pedestrian walked away.
+   26.8 s  ASKED 0G: may the drone drop the package?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No people visible in the
+        target zone."
+        0G request ID 8b6ed438-a09d-4301-99af-903f8f08e74c, model qwen3.8-flash, answered in 2.1 s.
+   26.8 s  ACTION: the drone did drop the package WITH an approved 0G decision.
+   29.5 s  ASKED 0G: may the drone fly to the next waypoint?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No obvious hazards visible
+        in the image."
+        0G request ID 9b6a4f50-4b5a-4455-8fd6-f06a68ee5d8a, model qwen3.8-flash, answered in 1.7 s.
+   29.5 s  ACTION: the drone did fly to the next waypoint WITH an approved 0G decision.
+   36.3 s  ASKED 0G: may the drone fly to the next waypoint?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No obvious hazards visible
+        in the reroute path."
+        0G request ID 0c6c38ff-2b3f-4d24-87c1-52a8329bb9dd, model qwen3.8-flash, answered in 2.5 s.
+   36.3 s  ACTION: the drone did fly to the next waypoint WITH an approved 0G decision.
+   44.0 s  ASKED 0G: may the drone land?
+        Answer: ALLOW, decided by 0G Private Computer. Reason: "No people visible in the
+        target zone."
+        0G request ID 8406f27f-98b8-4cb1-956d-84bfa95a2a23, model qwen3.8-flash, answered in 2.3 s.
+   44.0 s  ACTION: the drone did land WITH an approved 0G decision.
+   49.3 s  Flight ended. Battery left: 83%.
+
+------------------------------------------------------------------------------------------------
+3. THE INDEPENDENT JUDGE'S CHECKS (Chainlink workflow, objective rules)
+------------------------------------------------------------------------------------------------
+  [  OK  ] B1  Stayed inside the permitted area and out of every no-fly zone
+  [  OK  ] B2  Stayed under the height ceiling
+  [  OK  ] B3  Every action (take-off, reroute, drop, land) was approved by 0G first
+  [  OK  ] B4  Nobody overrode a 0G refusal
+  [  OK  ] B5  The record is complete and unedited (matches the fingerprints on 0G Chain)
+  [  OK  ] B6  Did not take off in wind above the permit limit
+
+------------------------------------------------------------------------------------------------
+4. IS THIS RECORD GENUINE?
+------------------------------------------------------------------------------------------------
+  YES. 34 records; every fingerprint matches the anchors sealed on 0G Chain.
+  Where the evidence lives:
+    - records 0-16: 0G Storage root 0x8e052ecc48fe086bc10c80c0878125025c714922fea34fcdcf09621ff3468966
+    - records 17-33: 0G Storage root 0xb8029f34a7e83b8b80f2f666b9f9d60e7c63f45d624041a13ad6bf28d67073aa
+      anchored on 0G Chain: https://chainscan-galileo.0g.ai/tx/0x0fddc4435c883088a9ae5115180ed3ca54a959cec6609041e5e39cdf4b057ce3
+      anchored on 0G Chain: https://chainscan-galileo.0g.ai/tx/0x611720b3cf223db8fb2e1cfeda93eaaf74ece016897a27319befad42b7be0fa5
+    - flight opened on 0G Chain: https://chainscan-galileo.0g.ai/tx/0x38bc8c463758e64dfaf4f46bd227626a13c27bc911c24b9c5f8c4e6475ecf6f6
+    - look up any storage root at https://storagescan-galileo.0g.ai
+
+------------------------------------------------------------------------------------------------
+5. VERDICT AND MONEY
+------------------------------------------------------------------------------------------------
+  REVIEW: the sealed record shows no objective rule was broken.
+  If a victim files a claim, the money is held on Arc and a human insurer decides, using this
+  same sealed record plus the victim's own sealed evidence. Nothing is paid automatically.
+  Claims filed against this flight: none.
+
+------------------------------------------------------------------------------------------------
+6. FOR AN INSURER, IN ONE MINUTE
+------------------------------------------------------------------------------------------------
+  - 8 decisions were requested; 8 were answered by 0G Private Computer.
+  - Every action the drone took was approved by 0G first.
+  - The record is intact: nobody, including the operator, has changed it since the flight.
+  - Outcome: no objective breach; any claim goes to human review.
+
+------------------------------------------------------------------------------------------------
+GLOSSARY
+------------------------------------------------------------------------------------------------
+  0G Private Computer : the AI service that looks at the drone's camera and answers ALLOW / DENY.
+  0G Storage          : where the encrypted black box is uploaded during the flight.
+  0G Chain            : where each part of the record is fingerprinted, so edits are detectable.
+  Chainlink judge     : an independent workflow that checks the record and the rules, then rules.
+  Arc / USDC bond     : money the operator locks in advance; it pays victims on a BREACH.
+  Safety fallback     : a pre-approved safe action when 0G can't answer; never a faked approval.
+================================================================================================

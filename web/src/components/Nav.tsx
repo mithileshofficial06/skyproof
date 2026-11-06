@@ -3,14 +3,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cx, Logo } from "./ui";
 
+// one entry per person who uses SkyProof; the technical pages live under "For operators"
 const LINKS = [
-  ["/", "Overview"],
-  ["/flights", "Flights"],
-  ["/live", "Live"],
-  ["/claim", "File a claim"],
-  ["/insurer", "Insurer"],
-  ["/experience", "3D experience"],
+  ["/", "Home"],
+  ["/claim", "Report a problem"],
+  ["/track", "Track my claim"],
+  ["/insurer", "For insurers"],
+  ["/operator", "For operators"],
 ] as const;
+const OPERATOR = ["/operator", "/live", "/flights", "/experience"];
 
 export function Nav() {
   const path = usePathname();
@@ -22,18 +23,23 @@ export function Nav() {
         </Link>
         <div className="mx-auto flex min-w-0 items-center gap-0.5 overflow-x-auto whitespace-nowrap [scrollbar-width:none] md:overflow-visible">
           {LINKS.map(([href, label]) => {
-            const active = href === "/" ? path === "/" : path.startsWith(href);
+            const active = href === "/" ? path === "/" : href === "/operator" ? OPERATOR.some((p) => path.startsWith(p)) : path.startsWith(href);
             return (
-              <Link key={href} href={href} className={cx("rounded-full px-3 py-1.5 text-[13px] transition-colors", active ? "bg-white/12 text-white" : "text-[#b4b7e0] hover:text-white")}>
+              <Link key={href} href={href} aria-current={active ? "page" : undefined} className={cx("rounded-full px-3 py-1.5 text-[14px] transition-colors", active ? "bg-white/12 text-white" : "text-[#b4b7e0] hover:text-white")}>
                 {label}
               </Link>
             );
           })}
         </div>
-        <Link href="/live" className="hidden shrink-0 items-center gap-2 rounded-full bg-[#f5f6ff] px-4 py-1.5 text-[13px] font-semibold text-[#0a0d24] transition-colors hover:bg-white md:flex">
-          <span className="blink h-1.5 w-1.5 rounded-full bg-[#ff4d4f]" />
-          Watch live
-        </Link>
+        <div className="hidden shrink-0 items-center gap-1.5 md:flex">
+          <Link href="/live" className="flex items-center gap-2 rounded-full border border-white/20 px-4 py-1.5 text-[13px] font-semibold text-white transition-colors hover:bg-white/10">
+            <span className="blink h-1.5 w-1.5 rounded-full bg-[#ff4d4f]" />
+            Live
+          </Link>
+          <Link href="/claim" className="flex items-center rounded-full bg-[#f5f6ff] px-4 py-1.5 text-[13px] font-semibold text-[#0a0d24] transition-colors hover:bg-white">
+            Report an incident
+          </Link>
+        </div>
       </div>
     </nav>
   );

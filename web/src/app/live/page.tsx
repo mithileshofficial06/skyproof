@@ -28,6 +28,22 @@ interface LiveState {
 
 const TITLES: Record<string, string> = { OBSTACLE: "Obstacle ahead", PEOPLE_UNDER_PATH: "People under the path", CHOOSE_DROP_SPOT: "Choose the drop spot", ZONE_BLOCKED: "Drop zone blocked", EMERGENCY: "In-flight emergency" };
 
+interface SimStatus {
+  running: boolean;
+  scenario: string | null;
+  startEnabled: boolean;
+  passRequired?: boolean;
+  startsLeft: number;
+}
+const SCENARIOS: [string, string, string][] = [
+  ["people_below", "Person in the drop zone", "A person stands where the package should land. 0G says DENY until they walk away."],
+  ["normal", "Normal delivery", "Every step approved by 0G, package delivered."],
+  ["network_down", "0G link lost", "The link to 0G drops before the drop. The drone does a safe stop and never fakes an approval."],
+  ["geofence_breach", "Cheating operator", "The operator disables the safety gate and flies through the airport. The black box catches it; a claim on this flight is paid automatically."],
+  ["blocked", "Drop zone blocked", "Every drop spot is taken, so 0G decides what to do with the package."],
+  ["full", "Full mission", "Crowd on the route, a crane, a fake 'safe' sign and an emergency on the way back."],
+];
+
 export default function Live() {
   const [conn, setConn] = useState<"connecting" | "open" | "closed">("connecting");
   const [permit, setPermit] = useState<Permit | null>(null);
@@ -44,6 +60,12 @@ export default function Live() {
   const [segs, setSegs] = useState<Seg[]>([]);
   const [published, setPublished] = useState<string | null>(null);
   const [boot, setBoot] = useState<{ at: number; permitHash: string } | null>(null);
+  const [sim, setSim] = useState<SimStatus | null>(null);
+  const [simMsg, setSimMsg] = useState<{ text: string; bad: boolean } | null>(null);
+  const [scenario, setScenario] = useState<string>("people_below");
+  const [passcode, setPasscode] = useState("");
+  const [remoteOnly, setRemoteOnly] = useState(false);
+  useEffect(() => setPasscode(sessionStorage.getItem("skyproof-passcode") ?? ""), []);
   const endBoot = useCallback(() => setBoot(null), []);
 
   const seq = useRef(0);
@@ -56,6 +78,13 @@ export default function Live() {
   useEffect(() => {
     let stop = false;
     let retry: ReturnType<typeof setTimeout>;
+    // the hosted site with no public flight computer configured: "localhost" would be the visitor's own machine
+    const local = (h: string) => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(h);
+    if (local(new URL(WS_URL.replace(/^ws/, "http")).hostname) && !local(window.location.hostname)) {
+      setRemoteOnly(true);
+      setConn("closed");
+      return;
+    }
     const connect = () => {
       const s = new WebSocket(WS_URL);
       ws.current = s;
@@ -75,6 +104,11 @@ export default function Live() {
           case "watching":
             setPermit(m.permit);
             setFlightId(m.flightId);
+            if (m.sim) setSim(m.sim);
+            break;
+          case "sim":
+            setSim(m);
+            if (m.error || m.message) setSimMsg({ text: m.error ?? m.message, bad: !!m.error });
             break;
           case "flight":
             setBoot({ at: Date.now(), permitHash: String(m.permitHash) });
@@ -211,7 +245,16 @@ export default function Live() {
   const last = events[events.length - 1];
   const status = last?.status === "breach" ? "breach" : last?.status === "deny" ? "deny" : last?.status === "warn" ? "warn" : "ok";
   const fx = state ? deriveFx(events, state.t, () => ({ pos: state.pos, alt: state.alt }), !!permit && state.windMs > permit.maxWindMs) : undefined;
-  const toggleNet = () => ws.current?.send(JSON.stringify({ type: "control", network: netDown ? "up" : "down" }));
+  const remember = () => sessionStorage.setItem("skyproof-passcode", passcode);
+  const toggleNet = () => {
+    remember();
+    ws.current?.send(JSON.stringify({ type: "control", network: netDown ? "up" : "down", passcode }));
+  };
+  const startFlight = () => {
+    remember();
+    setSimMsg(null);
+    ws.current?.send(JSON.stringify({ type: "start", scenario, passcode }));
+  };
 
   return (
     <div className="cockpit space-y-5 pt-2">
@@ -229,17 +272,56 @@ export default function Live() {
         </div>
       </div>
 
+      {conn === "open" && sim && (
+        <Panel title="Run a flight">
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex flex-col gap-1 text-xs text-[#8a8d93]">
+              Scenario
+              <select value={scenario} onChange={(e) => setScenario(e.target.value)} disabled={sim.running} className="rounded-md border border-[#e3ded3] bg-[#f6f3ec] px-3 py-2 text-sm text-[#15171a]">
+                {SCENARIOS.map(([k, l]) => (
+                  <option key={k} value={k}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {sim.startEnabled && sim.passRequired && (
+              <label className="flex flex-col gap-1 text-xs text-[#8a8d93]">
+                Demo passcode
+                <input type="password" autoComplete="off" value={passcode} onChange={(e) => setPasscode(e.target.value)} placeholder="from the submission notes" className="w-52 rounded-md border border-[#e3ded3] bg-[#f6f3ec] px-3 py-2 text-sm text-[#15171a]" />
+              </label>
+            )}
+            <button onClick={startFlight} disabled={sim.running || !sim.startEnabled || (!!sim.passRequired && !passcode.trim())} className="rounded-full bg-[#15171a] px-5 py-2.5 text-sm font-semibold text-[#f4f1ea] disabled:opacity-40">
+              {sim.running ? "Flight in progress…" : "Start flight"}
+            </button>
+            <span className="pb-2 text-xs text-[#8a8d93]">
+              {sim.running ? `Flying: ${SCENARIOS.find(([k]) => k === sim.scenario)?.[1] ?? sim.scenario}` : sim.startEnabled ? `${sim.startsLeft} demo flights left today · one at a time` : "Starting flights from the website is off on this flight computer."}
+            </span>
+          </div>
+          <p className="mt-2 text-xs text-[#8a8d93]">{SCENARIOS.find(([k]) => k === scenario)?.[2]}</p>
+          {simMsg && (
+            <p role="status" className={cx("mt-2 text-sm", simMsg.bad ? "text-[#9b1c1c]" : "text-[#0f766e]")}>
+              {simMsg.text}
+            </p>
+          )}
+        </Panel>
+      )}
+
       {conn !== "open" && (
         <Panel>
           <p className="text-sm text-[#33363b]">
-            {conn === "connecting" ? "Connecting to the flight computer…" : "No live flight right now. Live missions stream from the team's flight computer during demos."}{" "}
+            {remoteOnly ? "Live flights run on the operator's flight computer, which is not connected to this site right now." : conn === "connecting" ? "Connecting to the flight computer…" : "No live flight right now. Live missions stream from the team's flight computer during demos."}{" "}
             <Link href="/flights" className="font-semibold text-[#22d3ee] underline underline-offset-2">
               Watch a sealed flight instead →
             </Link>
           </p>
+{!remoteOnly && (
+            <>
           <p className="mt-3 text-xs text-[#8a8d93]">Running it yourself? Start the officer and fly a mission:</p>
           <pre className="mt-3 overflow-x-auto rounded-md bg-[#f6f3ec] p-4 font-mono text-xs text-[#33363b]">{`cd officer; pnpm officer
 cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
+            </>
+          )}
         </Panel>
       )}
 

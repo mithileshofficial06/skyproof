@@ -2,8 +2,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { formatUnits, hexToString, keccak256, parseAbi, stringToHex, type Address, type Hex } from "viem";
 import escrowAbi from "@/lib/escrowAbi.json";
-import { Badge, cx, HashLink, Panel, Stat } from "@/components/ui";
+import Link from "next/link";
+import { Chip, Details, RULE_WORDS, Timeline } from "@/components/simple";
+import { cx, HashLink, Panel, Stat } from "@/components/ui";
 import { useIndex } from "@/lib/data";
+import { flightFile } from "@/lib/siteData";
 import { AIRFRAME, arc, arcWallet, type ClaimView, connectArc, ESCROW, EVIDENCE_URL, packFile, pub, STATES, USDC } from "@/lib/arc";
 import { ARC_EXPLORER, buildTimeline, type FlightFile, scenarioLabel, ZG_EXPLORER } from "@/lib/flight";
 
@@ -36,7 +39,7 @@ export default function Claim() {
   }, [index, flightId]);
   useEffect(() => {
     if (!flightId) return;
-    fetch(`/data/flights/${flightId}.json`).then((r) => r.json()).then(setFlight);
+    flightFile(`${flightId}.json`).then((r) => r.json()).then(setFlight);
   }, [flightId]);
 
   const refreshInfo = async () => {
@@ -148,67 +151,217 @@ export default function Claim() {
   const remaining = windowEnd ? Math.max(0, windowEnd - now) : null;
   const flightsWithDrop = index?.filter((f) => f.scenario !== "network_down") ?? [];
 
+  const verdict = claim?.verdict ?? 0;
+  const brokenRule = claim && verdict === 1 ? hexToString(claim.breachCode, { size: 32 }).replace(/\0/g, "") : "";
+  const busyText = (b: string) =>
+    b.startsWith("Approve") ? "Please confirm the 1 USDC deposit in your wallet…" : b.startsWith("Sealing") ? "Saving your description and photos safely…" : b.startsWith("Open") ? "Sending your report…" : b.startsWith("Close") ? "Starting the automatic check…" : `${b}…`;
+  const fmtTime = (t: number) => new Date(t * 1000).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pt-2">
+    <div className="mx-auto max-w-3xl space-y-6 pt-2">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-[#15171a]">File a claim</h1>
-        <p className="mt-1 max-w-3xl text-sm text-[#55595f]">Hurt by a SkyProof drone? File a claim on Arc with a 1 USDC refundable deposit. After the 2-minute claim window, the Chainlink judge rebuilds the flight from 0G and, if an objective rule was broken, the operator&apos;s bond pays you automatically.</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-[#15171a]">Report a problem</h1>
+        <p className="mt-2 text-[15px] leading-relaxed text-[#55595f]">
+          Hurt, or something damaged, by a delivery drone? Tell us what happened. We check the drone&apos;s sealed black box. If it broke a safety rule, you are paid automatically. If not, an insurer looks at your case and replies with a reason.
+        </p>
       </div>
 
-      <Progress
-        stage={claim && claim.verdict > 0 ? 4 : state && state !== "Open" ? 3 : claimId !== null ? 2 : sealed ? 1 : 0}
-        result={claim && claim.verdict > 0 ? (claim.verdict === 1 ? "paid" : "held") : null}
-      />
+      {claimId === null && (
+        <Details title="How to test this (for judges)">
+          <ol className="list-decimal space-y-1.5 pl-5 text-sm text-[#33363b]">
+            <li>Install MetaMask. &ldquo;Connect my wallet&rdquo; adds the <b>Arc Testnet</b> network for you.</li>
+            <li>
+              Get free test USDC for Arc Testnet from the{" "}
+              <a href="https://faucet.circle.com" target="_blank" rel="noreferrer" className="font-semibold text-[#15171a] underline">
+                Circle faucet
+              </a>
+              . On Arc, USDC also pays the network fee, so about 2 USDC is plenty.
+            </li>
+            <li>
+              Pick a delivery. <b>&ldquo;Cheating operator&rdquo;</b> broke a safety rule, so it is paid automatically. A delivery that followed every rule goes to an insurer instead.
+            </li>
+            <li>Describe what happened, optionally add a photo, and send. After the 2-minute waiting period the automatic Chainlink check starts by itself; the result appears here within a minute or two.</li>
+            <li>
+              Follow it any time on{" "}
+              <Link href="/track" className="font-semibold text-[#15171a] underline">
+                Track my claim
+              </Link>
+              .
+            </li>
+          </ol>
+        </Details>
+      )}
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Stat label="Drone" value="SKY-001" sub={info ? (info.active ? "active (bond ≥ cap)" : "inactive") : "…"} tone={info?.active ? "good" : "warn"} />
-        <Stat label="Operator bond" value={info ? formatUnits(info.bond, 6) : "…"} sub="USDC locked on Arc" />
-        <Stat label="Payout cap" value={info ? formatUnits(info.cap, 6) : "…"} sub="USDC per claim" />
-        <Stat label="Your USDC" value={info?.balance !== null && info?.balance !== undefined ? Number(formatUnits(info.balance, 6)).toFixed(2) : "—"} sub={account ? `${account.slice(0, 6)}…${account.slice(-4)}` : "not connected"} />
-      </div>
+      {claimId === null ? (
+        <>
+          <Panel title="Step 1 · What happened?">
+            <div className="space-y-5">
+              <div>
+                <label htmlFor="when" className="block text-sm font-semibold text-[#15171a]">When did it happen?</label>
+                <p className="mt-0.5 text-xs text-[#8a8d93]">Demo: pick one of the recorded deliveries. In real use you would type the date, time and address.</p>
+                <select id="when" value={flightId} onChange={(e) => setFlightId(e.target.value)} className="mt-2 w-full rounded-md border border-[#e3ded3] bg-[#f6f3ec] px-3 py-3 text-[15px] text-[#15171a]">
+                  {flightsWithDrop.map((f) => (
+                    <option key={f.flightId} value={f.flightId}>
+                      Delivery on {new Date(f.startedAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })} (demo: {scenarioLabel(f.scenario).toLowerCase()})
+                    </option>
+                  ))}
+                </select>
+                {incident && (
+                  <p className="mt-2 text-sm text-[#55595f]">
+                    Time of the incident: <span className="font-semibold text-[#15171a]">{fmtTime(incident.time)}</span>, at the drop zone.
+                  </p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="what" className="block text-sm font-semibold text-[#15171a]">Tell us what happened</label>
+                <textarea id="what" value={statement} onChange={(e) => setStatement(e.target.value)} rows={4} maxLength={2000} placeholder="e.g. The drone dropped its package on my car around 4:12 PM. The windscreen is cracked." className="mt-2 w-full rounded-md border border-[#e3ded3] bg-[#f6f3ec] px-3 py-2.5 text-[15px] text-[#15171a]" />
+              </div>
+              <div>
+                <label htmlFor="photos" className="block text-sm font-semibold text-[#15171a]">
+                  Add photos <span className="font-normal text-[#8a8d93]">(optional, up to 4)</span>
+                </label>
+                <input id="photos" type="file" multiple accept="image/*,application/pdf" onChange={(e) => setFiles(Array.from(e.target.files ?? []).slice(0, 4))} className="mt-2 block text-sm text-[#55595f] file:mr-3 file:rounded-full file:border-0 file:bg-[#15171a] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[#f4f1ea]" />
+                {files.length > 0 && <p className="mt-1 text-xs text-[#55595f]">{files.length} file(s) added. They are stored safely and cannot be changed later.</p>}
+              </div>
+            </div>
+          </Panel>
 
-      <Panel title="1 · Connect your wallet">
-        {account ? (
-          <div className="flex items-center gap-2 text-sm">
-            <Badge tone="ok">Connected</Badge>
-            <span className="font-mono text-[#33363b]">{account}</span>
-            <Badge tone="arc">Arc Testnet</Badge>
-          </div>
-        ) : (
-          <button onClick={connect} className="rounded-md bg-[#15171a] px-5 py-2.5 text-sm font-semibold text-[#f4f1ea] hover:bg-[#2b2e33]">
-            Connect MetaMask
-          </button>
-        )}
-      </Panel>
+          <Panel title="Step 2 · Where should we send the money?">
+            {account ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <Chip tone="ok">Wallet connected</Chip>
+                <span className="font-mono text-[#33363b]">
+                  {account.slice(0, 6)}…{account.slice(-4)}
+                </span>
+              </div>
+            ) : (
+              <>
+                <p className="mb-3 text-sm text-[#55595f]">Payouts are sent in USDC (a digital dollar) to your wallet.</p>
+                <button onClick={connect} className="rounded-full bg-[#15171a] px-6 py-3 text-[15px] font-semibold text-[#f4f1ea] hover:bg-[#2b2e33]">
+                  Connect my wallet
+                </button>
+              </>
+            )}
+          </Panel>
 
-      <Panel title="2 · Which flight?">
-        <select value={flightId} onChange={(e) => setFlightId(e.target.value)} className="w-full rounded-md border border-[#e3ded3] bg-[#f6f3ec] px-3 py-2.5 text-sm text-[#15171a]">
-          {flightsWithDrop.map((f) => (
-            <option key={f.flightId} value={f.flightId}>
-              {scenarioLabel(f.scenario)} · {new Date(f.startedAt).toLocaleString()} · verdict preview {f.verdict}
-            </option>
-          ))}
-        </select>
-        {incident && (
-          <div className="mt-3 grid gap-2 text-xs text-[#55595f] sm:grid-cols-3">
-            <div>Incident time: <span className="font-mono text-[#15171a]">{new Date(incident.time * 1000).toLocaleTimeString()}</span></div>
-            <div>Where the package came down: <span className="font-mono text-[#15171a]">[{incident.pos.map((x) => x.toFixed(2)).join(", ")}]</span></div>
-            <div>Evidence: <span className="text-[#15171a]">sealed flight record on 0G</span></div>
-          </div>
-        )}
-      </Panel>
+          <Panel title="Step 3 · Send your report">
+            <p className="mb-3 text-sm text-[#55595f]">A small refundable deposit of 1 USDC stops fake reports. You get it back when you are paid.</p>
+            <button disabled={!account || !incident || !!busy || !info?.active} onClick={fileClaim} className="w-full rounded-full bg-[#15171a] px-6 py-3.5 text-base font-semibold text-[#f4f1ea] hover:bg-[#2b2e33] disabled:opacity-40 sm:w-auto">
+              {busy ? busyText(busy) : "Send my report"}
+            </button>
+            {!account && <p className="mt-2 text-sm text-[#8a8d93]">Connect your wallet in step 2 first.</p>}
+            {info && !info.active && <p className="mt-2 text-sm text-[#b45309]">This drone cannot take new reports right now: its operator&apos;s insurance money is too low.</p>}
+          </Panel>
+        </>
+      ) : (
+        <Panel title={`Your claim #${claimId}`} right={<Chip tone={verdict === 1 ? "ok" : verdict === 2 ? "warn" : "wait"}>{verdict === 1 ? "Paid" : verdict === 2 ? "With an insurer" : "In progress"}</Chip>}>
+          <Timeline
+            steps={[
+              {
+                title: "Report received",
+                state: "done",
+                detail: (
+                  <>
+                    Your claim number is <b>#{String(claimId)}</b>. You can follow it any time on{" "}
+                    <Link href={`/track?id=${claimId}`} className="font-semibold text-[#15171a] underline">
+                      Track my claim
+                    </Link>
+                    .
+                  </>
+                ),
+              },
+              {
+                title: "Short waiting period",
+                state: state && state !== "Open" ? "done" : "now",
+                detail:
+                  state && state !== "Open" ? (
+                    "Finished."
+                  ) : (
+                    <div className="space-y-2">
+                      <p>Anyone else hurt by the same drone can join in this time.</p>
+                      <div className="font-mono text-3xl font-semibold tabular-nums text-[#15171a]">{remaining !== null ? `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` : "…"}</div>
+                      <button disabled={!!busy || (remaining ?? 1) > 0 || state !== "Open"} onClick={closeWindow} className="rounded-full bg-[#15171a] px-5 py-2.5 text-sm font-semibold text-[#f4f1ea] disabled:opacity-40">
+                        {busy ? busyText(busy) : (remaining ?? 1) > 0 ? "Please wait…" : "Start the automatic check"}
+                      </button>
+                    </div>
+                  ),
+              },
+              {
+                title: "Automatic check of the drone's black box",
+                state: verdict > 0 ? "done" : closeTx || (state && state !== "Open") ? "now" : "todo",
+                detail: verdict > 0 ? "Done. The drone's record is genuine and was checked against the safety rules." : closeTx || (state && state !== "Open") ? "Chainlink is checking the drone's sealed record against the safety rules. This usually takes a minute or two." : "Starts by itself after the waiting period.",
+              },
+              {
+                title: verdict === 1 ? "Approved" : verdict === 2 ? "Sent to an insurer" : "Decision",
+                state: verdict === 1 ? "done" : verdict === 2 ? "warn" : "todo",
+                detail:
+                  verdict === 1 ? (
+                    <>
+                      The drone broke a safety rule: <b>{RULE_WORDS[brokenRule] ?? "a safety rule"}</b>. No one needs to approve this.
+                    </>
+                  ) : verdict === 2 ? (
+                    <>
+                      The drone&apos;s record shows no rule was broken, so a person will look at your description and photos and decide. Their answer and reason will appear on{" "}
+                      <Link href={`/track?id=${claimId}`} className="font-semibold text-[#15171a] underline">
+                        Track my claim
+                      </Link>
+                      .
+                    </>
+                  ) : undefined,
+              },
+              {
+                title: "Paid",
+                state: verdict === 1 ? "done" : "todo",
+                detail:
+                  verdict === 1 && claim ? (
+                    <div className="space-y-3">
+                      <p>{formatUnits(claim.cap, 6)} USDC was sent to your wallet, and your 1 USDC deposit was returned.</p>
+                      <MoneyFlow amount={formatUnits(claim.cap, 6)} />
+                    </div>
+                  ) : undefined,
+              },
+            ]}
+          />
+        </Panel>
+      )}
 
-      <Panel title="3 · Your evidence" right={<Badge tone="zg">sealed on 0G Storage</Badge>}>
-        <p className="text-xs text-[#55595f]">What happened to you? Add photos (injury, damage, the package) or a document. They are sealed on 0G Storage and their fingerprint goes into your claim on Arc, so nobody can change them later. An insurer reads them if the judge sends the claim to review.</p>
-        <textarea value={statement} onChange={(e) => setStatement(e.target.value)} disabled={claimId !== null} rows={3} maxLength={2000} placeholder="e.g. The package hit my shoulder at the drop zone around 4:12 AM. Bruised, saw a doctor." className="mt-3 w-full rounded-md border border-[#e3ded3] bg-[#f6f3ec] px-3 py-2 text-sm text-[#15171a] disabled:opacity-60" />
-        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[#55595f]">
-          <input type="file" multiple accept="image/*,application/pdf" disabled={claimId !== null} onChange={(e) => setFiles(Array.from(e.target.files ?? []).slice(0, 4))} className="text-xs" />
-          <span>{files.length ? `${files.length} file(s) · photos are resized to 1280 px` : "up to 4 files (optional)"}</span>
+      {error && (
+        <p role="alert" className="rounded-md border border-[#f0c4c4] bg-[#fdf0f0] px-4 py-3 text-sm text-[#9b1c1c]">
+          Something went wrong: {error}
+        </p>
+      )}
+
+      <Details title="Technical details">
+        <div className="grid gap-3 sm:grid-cols-4">
+          <Stat label="Drone" value="SKY-001" sub={info ? (info.active ? "active (bond ≥ cap)" : "inactive") : "…"} tone={info?.active ? "good" : "warn"} />
+          <Stat label="Operator bond" value={info ? formatUnits(info.bond, 6) : "…"} sub="USDC locked on Arc" />
+          <Stat label="Payout cap" value={info ? formatUnits(info.cap, 6) : "…"} sub="USDC per claim" />
+          <Stat label="Your USDC" value={info?.balance !== null && info?.balance !== undefined ? Number(formatUnits(info.balance, 6)).toFixed(2) : "—"} sub={account ? `${account.slice(0, 6)}…${account.slice(-4)}` : "not connected"} />
         </div>
+        {incident && (
+          <p className="text-xs text-[#55595f]">
+            Incident sent to Arc: time {incident.time}, place [{incident.pos.map((x) => x.toFixed(2)).join(", ")}] · flight {flightId}
+          </p>
+        )}
+        {closeTx && (
+          <div className="space-y-2">
+            <p className="text-sm text-[#33363b]">
+              The waiting period closed on Arc and emitted <span className="font-mono">ClaimWindowClosed</span>. The CRE auto-runner (<span className="font-mono">pnpm cre-runner</span>) picks this event up and runs the Chainlink CRE judge on it (simulation, broadcast to Arc). The same command by hand:
+            </p>
+            <pre className="overflow-x-auto rounded-md bg-[#f6f3ec] p-4 font-mono text-xs text-[#33363b]">{`cd cre/judge
+cre workflow simulate verdict --non-interactive --trigger-index 0 \\
+  --evm-tx-hash ${closeTx} --evm-event-index 0 --broadcast -T staging-settings`}</pre>
+          </div>
+        )}
+        {claimId !== null && <JudgeRules verdict={verdict} code={claim?.breachCode} />}
         {sealed && (
-          <div className="mt-3 space-y-0.5 font-mono text-[11px] text-[#55595f]">
-            <div>fingerprint <span className="text-[#15171a]">{sealed.evidenceHash}</span></div>
-            <div>0G root <span className="text-[#15171a]">{sealed.rootHash}</span></div>
+          <div className="space-y-0.5 font-mono text-[11px] text-[#55595f]">
+            <div>
+              evidence fingerprint <span className="text-[#15171a]">{sealed.evidenceHash}</span>
+            </div>
+            <div>
+              0G root <span className="text-[#15171a]">{sealed.rootHash}</span>
+            </div>
             <div>
               0G tx{" "}
               <a href={`${ZG_EXPLORER}/tx/${sealed.storageTx}`} target="_blank" rel="noreferrer" className="text-[#3b2fa8] underline">
@@ -217,56 +370,7 @@ export default function Claim() {
             </div>
           </div>
         )}
-      </Panel>
-
-      <Panel title="4 · Open the claim">
-        <button disabled={!account || !incident || !!busy || claimId !== null || !info?.active} onClick={fileClaim} className="rounded-md bg-[#15171a] px-5 py-2.5 text-sm font-semibold text-[#f4f1ea] hover:bg-[#2b2e33] disabled:opacity-40">
-          {busy && claimId === null ? `${busy}…` : claimId !== null ? `Claim #${claimId} opened` : "Deposit 1 USDC and open the claim"}
-        </button>
-        {!info?.active && <p className="mt-2 text-xs text-[#b45309]">The drone is inactive: the operator&apos;s bond is below the payout cap.</p>}
-      </Panel>
-
-      <Panel title="5 · Claim window">
-        {claimId === null ? (
-          <p className="text-sm text-[#8a8d93]">Opens after the claim is filed. Other claims for the same incident can join during this window.</p>
-        ) : (
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="font-mono text-4xl font-semibold tabular-nums text-[#15171a]">{remaining !== null ? `${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` : "…"}</div>
-            <button disabled={!!busy || (remaining ?? 1) > 0 || state !== "Open"} onClick={closeWindow} className="rounded-md border border-[#cfc8ba] bg-[#fffdf8] px-4 py-2 text-sm font-semibold text-[#15171a] disabled:opacity-40">
-              {busy === "Close claim window" ? "Closing…" : state && state !== "Open" ? "Window closed" : "Close the window"}
-            </button>
-          </div>
-        )}
-      </Panel>
-
-      <Panel title="6 · The Chainlink judge" right={state && <Badge tone={state === "Paid" ? "ok" : state === "Held" ? "warn" : "mute"}>{state}</Badge>}>
-        {!closeTx ? (
-          <p className="text-sm text-[#8a8d93]">Closing the window emits <span className="font-mono">ClaimWindowClosed</span>, the event that triggers the Chainlink CRE workflow.</p>
-        ) : (
-          <div className="space-y-3">
-            <p className="text-sm text-[#33363b]">Run the judge on this event (CRE simulation, broadcast to Arc):</p>
-            <pre className="overflow-x-auto rounded-md bg-[#f6f3ec] p-4 font-mono text-xs text-[#33363b]">{`cd cre/judge
-cre workflow simulate verdict --non-interactive --trigger-index 0 \\
-  --evm-tx-hash ${closeTx} --evm-event-index 0 --broadcast -T staging-settings`}</pre>
-            <JudgeRules verdict={claim?.verdict ?? 0} code={claim?.breachCode} />
-            {claim && claim.verdict === 1 && <MoneyFlow amount={formatUnits(claim.cap, 6)} />}
-            {claim && claim.verdict > 0 && (
-              <div className={cx("rounded-md border p-4", claim.verdict === 1 ? "border-[#b7dcd6] bg-[#ecf7f5]" : "border-[#efd3a6] bg-[#fdf6ea]")}>
-                <div className="text-lg font-semibold text-[#15171a]">{claim.verdict === 1 ? `BREACH · ${formatUnits(claim.cap, 6)} USDC paid to you` : "REVIEW · funds held for the insurer"}</div>
-                <div className="mt-1 text-xs text-[#55595f]">{claim.verdict === 1 ? "Your 1 USDC deposit was refunded too." : "No objective rule was broken; the insurer decides with the verified evidence."}</div>
-                {claim.verdict !== 1 && (
-                  <a href="/insurer" className="mt-2 inline-block text-xs font-semibold text-[#3b2fa8] underline">
-                    See it on the insurer desk →
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </Panel>
-
-      {txs.length > 0 && (
-        <Panel title="Your transactions on Arc">
+        {txs.length > 0 && (
           <ul className="space-y-1.5 text-sm">
             {txs.map((t) => (
               <li key={t.hash} className="flex items-center justify-between">
@@ -275,37 +379,12 @@ cre workflow simulate verdict --non-interactive --trigger-index 0 \\
               </li>
             ))}
           </ul>
-        </Panel>
-      )}
-      {error && <p className="rounded-md border border-[#f0c4c4] bg-[#fdf0f0] px-4 py-3 text-sm text-[#9b1c1c]">{error}</p>}
+        )}
+      </Details>
     </div>
   );
 }
 
-const STAGES = ["Evidence", "Claim on Arc", "Claim window", "Chainlink judge", "Result"];
-function Progress({ stage, result }: { stage: number; result: "paid" | "held" | null }) {
-  return (
-    <div className="flex items-center gap-2">
-      {STAGES.map((l, i) => {
-        const done = i < stage || (i === 4 && !!result);
-        const now = i === stage && !result;
-        const color = i === 4 && result ? (result === "paid" ? "#10b981" : "#b45309") : i <= 1 ? "#7c5cff" : i === 3 ? "#375bd2" : "#0e8ea0";
-        return (
-          <div key={l} className="flex flex-1 items-center gap-2">
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <div className="h-1.5 overflow-hidden rounded-full bg-[#e3ded3]">
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: done ? "100%" : now ? "45%" : "0%", background: color }} />
-              </div>
-              <span className={cx("truncate text-[11px] font-medium", done || now ? "text-[#15171a]" : "text-[#8a8d93]")}>
-                {i === 4 && result ? (result === "paid" ? "Paid ✓" : "Held for insurer") : l}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 const RULES = [
   ["B1_GEOFENCE", "Stayed in the permitted area"],

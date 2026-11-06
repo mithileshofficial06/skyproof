@@ -583,7 +583,113 @@ function useRadial() {
   }, []);
 }
 
+// ---- sponsor flags: a waving cloth with the sponsor's name painted on (no external logo files)
+type FlagSpec = { label: string; sub: string; bg: string; fg: string };
+const SPONSORS: (FlagSpec & { xy: XY })[] = [
+  { label: "0G", sub: "decides · stores · proves", bg: "#7c5cff", fg: "#ffffff", xy: [1.0, -0.22] },
+  { label: "Chainlink", sub: "CRE judge", bg: "#375bd2", fg: "#ffffff", xy: [2.25, -0.22] },
+  { label: "Arc", sub: "USDC payout", bg: "#0b1220", fg: "#ffffff", xy: [3.02, 2.55] },
+];
+function useFlagTexture({ label, sub, bg, fg }: FlagSpec) {
+  const tex = useMemo(() => {
+    const c = document.createElement("canvas");
+    c.width = 512;
+    c.height = 320;
+    const ctx = c.getContext("2d")!;
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, 512, 320);
+    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    ctx.fillRect(0, 0, 18, 320); // hem by the pole
+    ctx.fillStyle = fg;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `700 ${label.length > 4 ? 92 : 150}px "Space Grotesk", system-ui, sans-serif`;
+    ctx.fillText(label, 265, sub ? 140 : 160);
+    if (sub) {
+      ctx.font = `600 38px system-ui, sans-serif`;
+      ctx.globalAlpha = 0.85;
+      ctx.fillText(sub, 265, 248);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 4;
+    // the back of the cloth gets a mirrored copy, so the name reads correctly from both sides
+    const back = t.clone();
+    back.wrapS = THREE.RepeatWrapping;
+    back.repeat.x = -1;
+    back.offset.x = 1;
+    back.needsUpdate = true;
+    return { front: t, back };
+  }, [label, sub, bg, fg]);
+  useEffect(() => () => (tex.front.dispose(), tex.back.dispose()), [tex]);
+  return tex;
+}
+/** cloth hanging from x=0 (the pole) to x=w, waving harder towards the free edge */
+function Cloth({ spec, w, h, speed = 4.5, amp = 0.07 }: { spec: FlagSpec; w: number; h: number; speed?: number; amp?: number }) {
+  const map = useFlagTexture(spec);
+  const geo = useMemo(() => {
+    const g = new THREE.PlaneGeometry(w, h, 18, 8);
+    g.translate(w / 2, 0, 0);
+    return g;
+  }, [w, h]);
+  useEffect(() => () => geo.dispose(), [geo]);
+  const phase = useMemo(() => Math.random() * 10, []);
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime * speed + phase;
+    const p = geo.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < p.count; i++) {
+      const x = p.getX(i);
+      const k = x / w;
+      p.setZ(i, Math.sin(x * (9 / w) - t) * amp * w * k + Math.sin(p.getY(i) * 20 + t * 0.7) * 0.01 * w * k);
+    }
+    p.needsUpdate = true;
+    geo.computeVertexNormals();
+  });
+  return (
+    <>
+      <mesh geometry={geo} castShadow>
+        <meshStandardMaterial map={map.front} side={THREE.FrontSide} roughness={0.85} />
+      </mesh>
+      <mesh geometry={geo}>
+        <meshStandardMaterial map={map.back} side={THREE.BackSide} roughness={0.85} />
+      </mesh>
+    </>
+  );
+}
+function SponsorFlag({ xy, ...spec }: FlagSpec & { xy: XY }) {
+  const H = 0.6;
+  return (
+    <group position={v(xy[0], xy[1], 0)} rotation-y={0.35}>
+      <mesh position={[0, 0.012, 0]} receiveShadow>
+        <cylinderGeometry args={[0.03, 0.036, 0.024, 16]} />
+        <meshStandardMaterial color="#4b5058" />
+      </mesh>
+      <mesh position={[0, H / 2, 0]} castShadow>
+        <cylinderGeometry args={[0.006, 0.008, H, 10]} />
+        <meshStandardMaterial color="#d4d4d8" metalness={0.8} roughness={0.3} />
+      </mesh>
+      <mesh position={[0, H + 0.008, 0]}>
+        <sphereGeometry args={[0.012, 12, 12]} />
+        <meshStandardMaterial color="#e5c07b" metalness={0.9} roughness={0.25} />
+      </mesh>
+      <group position={[0.006, H - 0.085, 0]}>
+        <Cloth spec={spec} w={0.27} h={0.17} />
+      </group>
+    </group>
+  );
+}
+function SponsorFlags() {
+  return (
+    <>
+      {SPONSORS.map((s) => (
+        <SponsorFlag key={s.label} {...s} />
+      ))}
+    </>
+  );
+}
+
 const ZG_PURPLE = new THREE.Color("#7c5cff");
+const ZG_PENNANT: FlagSpec = { label: "0G", sub: "", bg: "#7c5cff", fg: "#ffffff" };
 
 function Drone({ drone: droneProp, fx, shared, getDrone }: { drone: DroneView; fx: SceneFx; shared: Shared; getDrone?: () => DroneView | null }) {
   const { scene } = useGLTF("/models/drone.glb");
@@ -699,6 +805,16 @@ function Drone({ drone: droneProp, fx, shared, getDrone }: { drone: DroneView; f
       <group ref={body}>
         <group scale={fit}>
           <primitive object={model} />
+        </group>
+        {/* 0G pennant on a short mast at the tail: the brain flies with it */}
+        <group position={[-0.07, 0.02, 0]}>
+          <mesh position={[0, 0.07, 0]}>
+            <cylinderGeometry args={[0.003, 0.003, 0.16, 6]} />
+            <meshStandardMaterial color="#d4d4d8" metalness={0.8} roughness={0.3} />
+          </mesh>
+          <group position={[0, 0.115, 0]} rotation-y={Math.PI}>
+            <Cloth spec={ZG_PENNANT} w={0.14} h={0.088} speed={9} amp={0.09} />
+          </group>
         </group>
         {navs
           .filter((n) => n.kind !== "strobe")
@@ -994,6 +1110,7 @@ export default function Scene3D({ permit, drone, trail, people, props, fx = {}, 
           <CityM permit={permit} />
           <AirportM permit={permit} />
           <ZonesM permit={permit} />
+          <SponsorFlags />
           {props.map((p, i) => (p.kind === "crane" ? <Crane key={i} tower={p.tower!} boomEndX={p.boomEndX!} boomZ={p.boomZ!} /> : <Sign key={i} xy={p.xy!} text={p.text ?? ""} />))}
           {people.map((p, i) => (
             <Person key={`${p.xy[0]}-${p.xy[1]}-${i}`} xy={p.xy} i={i} walk={p.role === "crowd"} shirt={p.role === "crowd" ? SHIRTS[i % SHIRTS.length] : "#b91c1c"} />

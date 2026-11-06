@@ -54,13 +54,27 @@ async function release(chainFlightId: string) {
 }
 
 /** Which flight was airframe `af` flying at unix time `t`? (The judge re-checks this on 0G Chain.) */
+// closed flights never change on 0G Chain, so their open/close times are cached
+const windows = new Map<string, { openedAt: number; closedAt: number }>();
+/** Which sealed flight covers time t? Only flights that started near t are checked on 0G Chain (the judge
+ *  re-checks the answer on chain itself), so this stays fast however many flights exist. */
 async function lookup(af: string, t: number) {
   const { log } = contracts(provider);
-  for (const f of readdirSync(`${TMP}flights`).filter((f) => f.endsWith(".manifest.json"))) {
+  const near = readdirSync(`${TMP}flights`)
+    .filter((f) => f.endsWith(".manifest.json"))
+    .map((f) => ({ f, started: Number(f.match(/-(\d{13})\.manifest\.json$/)?.[1] ?? 0) / 1000 }))
+    .filter((x) => !x.started || (x.started <= t + 60 && t - x.started <= 3600)) // started up to 1 h before the incident
+    .sort((a, b) => b.started - a.started);
+  for (const { f } of near) {
     const m = JSON.parse(readFileSync(`${TMP}flights/${f}`, "utf8"));
     if (airframeKey(m.airframeId).toLowerCase() !== af.toLowerCase() || !m.closed) continue;
-    const fl = await log.flights(m.chainFlightId);
-    if (Number(fl.openedAt) <= t && t <= Number(fl.closedAt)) return { status: 200, body: { chainFlightId: m.chainFlightId } };
+    let w = windows.get(m.chainFlightId);
+    if (!w) {
+      const fl = await log.flights(m.chainFlightId);
+      w = { openedAt: Number(fl.openedAt), closedAt: Number(fl.closedAt) };
+      if (w.closedAt) windows.set(m.chainFlightId, w);
+    }
+    if (w.openedAt <= t && t <= w.closedAt) return { status: 200, body: { chainFlightId: m.chainFlightId } };
   }
   return { status: 404, body: { error: "no sealed flight for that airframe at that time" } };
 }
@@ -143,10 +157,23 @@ function getDecision(claimId: number) {
   return existsSync(f) ? { status: 200, body: JSON.parse(readFileSync(f, "utf8")) } : { status: 404, body: { error: "no written reason for this claim" } };
 }
 
+// flights published on this computer after the website was deployed: the hosted site reads them from here
+const SITE_FLIGHTS = fileURLToPath(new URL("../../web/public/data/flights/", import.meta.url));
+
 createServer(async (req, res) => {
   if (req.method === "OPTIONS") {
-    res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST", "Access-Control-Allow-Headers": "Content-Type" });
+    res.writeHead(204, { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "GET, POST", "Access-Control-Allow-Headers": "Content-Type, X-Tunnel-Skip-AntiPhishing-Page" });
     return res.end();
+  }
+  const sf = req.method === "GET" ? req.url?.match(/^\/site\/flights\/([A-Za-z0-9_-]+(?:\.summary\.txt|\.json))$/) : null;
+  if (sf) {
+    const f = `${SITE_FLIGHTS}${sf[1]}`;
+    if (!existsSync(f)) {
+      res.writeHead(404, { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" });
+      return res.end(JSON.stringify({ error: "no such published flight" }));
+    }
+    res.writeHead(200, { "Content-Type": f.endsWith(".txt") ? "text/plain; charset=utf-8" : "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-cache" });
+    return res.end(readFileSync(f));
   }
   const ce = req.url?.match(/^\/claim-evidence\/(0x[0-9a-fA-F]{64})$/);
   const dc = req.url?.match(/^\/decision\/(\d+)$/);

@@ -12,7 +12,8 @@
     "claim": "tsx src/claim.ts",
     "evidence": "tsx src/evidence.ts",
     "export-web": "tsx src/export-web.ts",
-    "summary": "tsx src/flight-summary.ts"
+    "summary": "tsx src/flight-summary.ts",
+    "cre-runner": "tsx src/cre-runner.ts"
   },
   "dependencies": {
     "@0gfoundation/0g-storage-ts-sdk": "^1.2.13",

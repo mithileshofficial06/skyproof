@@ -3,9 +3,9 @@ import { short } from "@/lib/flight";
 
 export const cx = (...c: (string | false | null | undefined)[]) => c.filter(Boolean).join(" ");
 
-export function Panel({ title, icon, right, children, className }: { title?: string; icon?: ReactNode; right?: ReactNode; children: ReactNode; className?: string }) {
+export function Panel({ title, icon, right, children, className, id }: { title?: string; icon?: ReactNode; right?: ReactNode; children: ReactNode; className?: string; id?: string }) {
   return (
-    <section className={cx("rounded-lg border border-[#e3ded3] bg-[#fffdf8]", className)}>
+    <section id={id} className={cx("rounded-lg border border-[#e3ded3] bg-[#fffdf8]", className)}>
       {title && (
         <header className="flex items-center justify-between gap-3 border-b border-[#ece7dc] px-4 py-3">
           <h3 className="flex items-center gap-2 text-[13px] font-semibold text-[#15171a]">

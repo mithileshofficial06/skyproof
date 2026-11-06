@@ -1,6 +1,7 @@
 "use client";
 // Verify a record (specs/05-uiux.md 10, P1): load any published flight through the adapter, recompute every
 // fingerprint in the browser, compare with the anchors, and download the evidence as JSON.
+import { flightIndex } from "@/lib/siteData";
 import { useEffect, useState } from "react";
 import { source } from "@/lib/data/adapter";
 import { verify } from "@/lib/data/hash";
@@ -17,9 +18,8 @@ export function VerifyPanel() {
   const [err, setErr] = useState<string | null>(null);
   const [out, setOut] = useState<Out | null>(null);
   useEffect(() => {
-    fetch("/data/flights/index.json")
-      .then((r) => r.json())
-      .then((a: { flightId: string }[]) => setIds(a.map((x) => x.flightId)))
+    flightIndex()
+      .then((a) => setIds(a.map((x) => x.flightId)))
       .catch(() => {});
   }, []);
 

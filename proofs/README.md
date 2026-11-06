@@ -16,6 +16,9 @@ Explorers: 0G Galileo = chainscan-galileo.0g.ai · Arc Testnet = testnet.arcscan
 | 10–11 | Tamper tests: DENY→ALLOW edit and a deleted record are both caught (B5_RECORD_BROKEN) | log |
 | 12 | Live 0G compute call: qwen3.8-flash vision → ALLOW, with request id + provider | log |
 | 13 | Operator wallet activity on 0G | [address](https://chainscan-galileo.0g.ai/address/0x69A5160E8bf27A2a9D8d17eaff0De079CfdFA12A) |
+| 14 | Safe stop with 0G cut (flight SKY-001-network_down-1793918402552): 6× NO_DECISION, then HOLD → DIVERT → LAND, no 0G decision claimed. Record: `reports/flights/SKY-001-network_down-1793918402552.txt` | [open](https://chainscan-galileo.0g.ai/tx/0x0ca4b9af87cc214b4fb7f8029f319a24adbebe2a006cd32d2ea56e38eb7742ab) · [anchor](https://chainscan-galileo.0g.ai/tx/0x8a3a34eb9c33e9c26c0e559c286b6999ab7e5e797f24319c9ffec8c9c1671629) |
+
+One-page map of 0G's four requirements to these proofs: [docs/0G_Proof_Sheet.md](../docs/0G_Proof_Sheet.md).
 
 ## Chainlink CRE (`chainlink-cre/`)
 | # | Proof |

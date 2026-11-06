@@ -10,6 +10,7 @@ import { Sponsors } from "@/components/home/Sponsors";
 import { Story } from "@/components/home/Story";
 import { WithWithout } from "@/components/home/WithWithout";
 import { Reveal } from "@/components/motion";
+import { ChoiceCard, Icon } from "@/components/simple";
 import { type ClaimView, ESCROW, pub } from "@/lib/arc";
 import { pickFlight, useFlight, useIndex } from "@/lib/data";
 
@@ -49,6 +50,23 @@ export default function Home() {
         ]}
       />
 
+      {/* one door per person: the victim, the insurer, the operator */}
+      <section aria-labelledby="choose" className="mx-auto max-w-6xl px-1 py-14">
+        <h2 id="choose" className="text-center text-3xl font-semibold tracking-[-0.02em] text-[#15171a] md:text-4xl">What do you need?</h2>
+        <p className="mx-auto mt-3 max-w-xl text-center text-[15px] text-[#55595f]">Pick the one that fits you. Each path is a few simple steps.</p>
+        <div className="mt-8 grid gap-5 md:grid-cols-3">
+          <ChoiceCard href="/claim" icon={<Icon name="alert" />} title="I was affected by a drone" text="A drone or its package hurt you or damaged your things. Tell us what happened and we check the drone's black box." cta="Report a problem" />
+          <ChoiceCard href="/insurer" icon={<Icon name="inbox" />} title="I review claims" text="See the claims that need a person to decide, with the drone's record and the victim's photos side by side." cta="Open the claims inbox" />
+          <ChoiceCard href="/operator" icon={<Icon name="drone" />} title="I run drones" text="Watch flights live, open the black box of past flights, and check that records were never changed." cta="Go to operator tools" />
+        </div>
+        <p className="mt-6 text-center text-sm text-[#55595f]">
+          Already reported something?{" "}
+          <Link href="/track" className="font-semibold text-[#15171a] underline decoration-[#7c5cff] decoration-2 underline-offset-4">
+            Track your claim
+          </Link>
+        </p>
+      </section>
+
       <Band n="01" label="The problem">
       <Problem />
       </Band>
@@ -67,7 +85,7 @@ export default function Home() {
 
       <Band n="05" label="Don't trust us">
       {/* try to cheat */}
-      <section>
+      <section id="check" className="scroll-mt-24">
         <Reveal>
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#c2410c]">Don&apos;t trust us</p>
           <h2 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight tracking-[-0.02em] text-[#15171a] md:text-4xl">Try to cheat. Your browser checks the record against 0G Chain.</h2>

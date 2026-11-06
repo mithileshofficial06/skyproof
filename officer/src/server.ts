@@ -13,6 +13,11 @@ import { zgDecide, zgChoose, ZgUnreachable, PROMPT_HASH, SITUATION_PROMPT_HASH }
 import { FlightRecorder } from "./record.js";
 import { FlightSealer } from "./sealer.js";
 import { operatorWallet, loadDeployment } from "./chain.js";
+import { passOk, passRequired, simStatus, startSim, tokenOk } from "./demo-control.js";
+
+// a dropped connection inside the 0G SDKs must never take the flight computer down mid-demo
+process.on("unhandledRejection", (e) => console.error(`${new Date().toTimeString().slice(0, 8)} network error ignored (officer keeps running):`, (e as Error)?.message ?? e));
+process.on("uncaughtException", (e) => console.error(`${new Date().toTimeString().slice(0, 8)} error ignored (officer keeps running):`, e?.message ?? e));
 
 const PORT = Number(process.env.OFFICER_PORT || 8787);
 const STATE_BATCH_MS = 5000;
@@ -143,23 +148,53 @@ function broadcast(msg: unknown) {
 const wss = new WebSocketServer({ port: PORT });
 wss.on("connection", (ws: WebSocket) => {
   let s: Session | null = null;
+  let drone = false; // set by a hello carrying this run's drone token
   ws.on("close", () => watchers.delete(ws));
   ws.on("message", async (raw) => {
-    const msg = JSON.parse(raw.toString());
+    let msg: any;
+    try {
+      msg = JSON.parse(raw.toString());
+    } catch {
+      return; // not JSON: ignore
+    }
     try {
       if (msg.type === "watch") {
         watchers.add(ws);
-        ws.send(JSON.stringify({ type: "watching", flightId: lastSession?.rec.flightId ?? null, permit, permitHash }));
+        ws.send(JSON.stringify({ type: "watching", flightId: lastSession?.rec.flightId ?? null, permit, permitHash, sim: simStatus() }));
+        return;
+      }
+      if (msg.type === "start" && watchers.has(ws)) {
+        // a website visitor asks for a flight: passcode, fixed scenario list, one at a time, daily cap
+        const pass = passOk(msg.passcode);
+        const err = pass.ok ? startSim(String(msg.scenario ?? ""), log, (code) => broadcast({ type: "sim", ...simStatus(), message: code === 0 ? "The flight finished." : "The simulator stopped." })) : pass.why!;
+        if (err) ws.send(JSON.stringify({ type: "sim", ...simStatus(), error: err }));
+        else broadcast({ type: "sim", ...simStatus(), message: "Starting the drone…" });
         return;
       }
       if (msg.type === "control" && watchers.has(ws)) {
+        if (passRequired && !passOk(msg.passcode).ok) {
+          ws.send(JSON.stringify({ type: "sim", ...simStatus(), error: "Enter the demo passcode to cut the 0G link." }));
+          return;
+        }
         if (lastSession) lastSession.netDown = msg.network === "down";
         log(`(console) link to 0G is now ${msg.network === "down" ? "DOWN" : "UP"}`);
         broadcast({ type: "control", network: msg.network });
         return;
       }
+      // everything below is the drone talking: only a simulator holding this run's token may do it
+      if (msg.type !== "hello" && !drone) {
+        ws.send(JSON.stringify({ type: "error", id: randomUUID(), message: "not the drone" }));
+        return;
+      }
       switch (msg.type) {
         case "hello": {
+          if (!tokenOk(msg.token)) {
+            log("rejected a drone hello without the right token");
+            ws.send(JSON.stringify({ type: "error", id: randomUUID(), message: "drone token missing or wrong" }));
+            ws.close();
+            return;
+          }
+          drone = true;
           const flightId = `${permit.airframeId}-${msg.scenario}-${Date.now()}`;
           s = { rec: new FlightRecorder(flightId, signer), sealer: null, netDown: false, samples: [], lastBatch: Date.now(), lastKept: -1 };
           s.rec.append("PERMIT", { permitHash, permit, signer: signer.address, visionModel: process.env.ZG_VISION_MODEL, promptHash: PROMPT_HASH, situationPromptHash: SITUATION_PROMPT_HASH, scenario: msg.scenario });
