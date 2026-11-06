@@ -236,7 +236,13 @@ wss.on("connection", (ws: WebSocket) => {
             const p = spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", "src/export-web.ts"], { cwd: fileURLToPath(new URL("..", import.meta.url)) });
             p.on("exit", (code) => {
               log(code === 0 ? `website: flight ${m.flightId} published` : `website export failed (code ${code})`);
-              if (code === 0) broadcast({ type: "published", flightId: m.flightId });
+              if (code === 0) {
+                broadcast({ type: "published", flightId: m.flightId });
+                // plain-English summary for insurers / newcomers, next to the published flight
+                spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", "src/flight-summary.ts", m.flightId], { cwd: fileURLToPath(new URL("..", import.meta.url)) }).on("exit", (c) =>
+                  log(c === 0 ? `summary written: reports/flights/${m.flightId}.txt` : `summary failed (code ${c})`),
+                );
+              }
             });
           });
           break;

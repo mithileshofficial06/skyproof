@@ -75,7 +75,7 @@ export function Story() {
             <button key={x.key} onClick={() => go(i)} className="group flex flex-col items-center gap-3 text-center">
               <span
                 className={cx("grid h-14 w-14 place-items-center rounded-2xl border-2 font-mono text-sm font-bold transition-all duration-500", i === step ? "scale-110 text-white" : i < step ? "text-[#e1e3fa]" : "bg-[#0c0e2a]/70 text-[#8f93c4] group-hover:border-white/40")}
-                style={{ background: i <= step ? `linear-gradient(${x.color}${i === step ? "33" : "1a"}, ${x.color}${i === step ? "33" : "1a"}), #0c0e2a` : undefined, // a flat tint over a solid base, so the travelling dot hides behind it borderColor: i <= step ? x.color : "rgba(255,255,255,0.14)", boxShadow: i === step ? `0 0 0 6px ${x.color}1f` : undefined }}
+                style={{ background: i <= step ? `linear-gradient(${x.color}${i === step ? "33" : "1a"}, ${x.color}${i === step ? "33" : "1a"}), #0c0e2a` : undefined, borderColor: i <= step ? x.color : "rgba(255,255,255,0.14)", boxShadow: i === step ? `0 0 0 6px ${x.color}1f` : undefined }}
               >
                 {String(i + 1).padStart(2, "0")}
               </span>
