@@ -11,6 +11,7 @@ export const X = {
   danger: "#ff3b30",
   pass: "#22c55e",
   capsule: "#ff6a00",
+  ghost: "#9fb3c8",
   zg: "#7c5cff",
   chainlink: "#375bd2",
   arc: "#0e8ea0",

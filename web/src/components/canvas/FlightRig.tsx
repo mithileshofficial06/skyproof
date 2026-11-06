@@ -5,7 +5,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { type ReactNode, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { KEYS_TALL, KEYS_WIDE, sampleCam } from "@/lib/camera-keys";
-import { STORY_LENGTH, storyCurve } from "@/lib/flight-curve";
+import { STORY_LENGTH, storyCurve, TRUTHS_RANGE, truthsFocus } from "@/lib/flight-curve";
+import { smoothstep } from "@/lib/math";
 import { bankRoll, curvature, poseQuat } from "@/lib/rig";
 import { useUI } from "@/lib/store";
 
@@ -52,6 +53,9 @@ export function FlightRig({ children }: { children: (climb: { current: number })
     if (!s.placed) camera.position.copy(s.desired);
     else camera.position.set(D(camera.position.x, s.desired.x, 3, dt), D(camera.position.y, s.desired.y, 3, dt), D(camera.position.z, s.desired.z, 3, dt));
     s.look.copy(s.p).addScaledVector(s.yaw, k.look);
+    // during Two Truths the camera turns to the sealed flight on the floor, then back to the drone
+    const [a0, a1, b0, b1] = TRUTHS_RANGE;
+    s.look.lerp(truthsFocus, smoothstep(a0, a1, u) * (1 - smoothstep(b0, b1, u)));
     camera.lookAt(s.look);
     if (Math.abs(camera.fov - k.fov) > 0.01) {
       camera.fov = s.placed ? D(camera.fov, k.fov, 3, dt) : k.fov;

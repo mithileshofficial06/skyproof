@@ -16,6 +16,12 @@ export const storyPoints = [
 export const storyCurve = new THREE.CatmullRomCurve3(storyPoints, false, "centripetal");
 export const STORY_LENGTH = storyCurve.getLength();
 
-/** where the Two Truths group sits: on the route, a little below it (spec Section 8) */
-export const TRUTHS_U = 0.38;
-export const truthsAnchor = storyCurve.getPointAt(TRUTHS_U).add(new THREE.Vector3(0, -2, 0));
+/** where the Two Truths group sits: on the floor, a little ahead of the drone, so the wide shot looks down on it
+ * (spec Section 8 put it at u 0.38, 2 units below the route; tuned so it fills the frame) */
+export const TRUTHS_U = 0.44;
+const at = storyCurve.getPointAt(TRUTHS_U);
+export const truthsAnchor = new THREE.Vector3(at.x + 2.5, -1.5, at.z); // +x: clear of the text card on the left
+/** what the camera looks at while Two Truths is on screen */
+export const truthsFocus = truthsAnchor.clone().add(new THREE.Vector3(0, 1.6, 0));
+/** scroll range over which the camera turns to the group and back */
+export const TRUTHS_RANGE: [number, number, number, number] = [0.25, 0.31, 0.47, 0.53];

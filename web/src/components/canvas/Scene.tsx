@@ -10,12 +10,14 @@ import { useUI } from "@/lib/store";
 import { X } from "@/lib/tokens";
 import { Drone } from "./Drone";
 import { FlightRig } from "./FlightRig";
+import { TelemetryGroup } from "./TelemetryGroup";
 
 function Stage() {
   return (
     <group>
       <Grid infiniteGrid position={[0, -1.6, 0]} cellSize={1} cellThickness={0.6} cellColor={X.gridSub} sectionSize={6} sectionThickness={1} sectionColor={X.grid} fadeDistance={70} fadeStrength={1.6} followCamera />
       <FlightRig>{(climb) => <Drone climb={climb} />}</FlightRig>
+      <TelemetryGroup />
     </group>
   );
 }
