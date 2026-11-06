@@ -193,7 +193,7 @@ export default function ProofCheck({ flight }: { flight: FlightFile }) {
 
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-[#ece7dc] pt-3">
         <span className="text-xs text-[#55595f]">Someone hurt by this flight?</span>
-        <Link href={`/claim?flight=${flight.flightId}`} className="rounded-md bg-[#15171a] px-3 py-1.5 text-xs font-semibold text-[#fffdf8] hover:bg-[#33363b]">
+        <Link href={`/claim?flight=${flight.flightId}`} className="rounded-md bg-[#f5f6ff] px-3 py-1.5 text-xs font-semibold text-[#0a0d24] hover:bg-white">
           File a claim on Arc →
         </Link>
       </div>

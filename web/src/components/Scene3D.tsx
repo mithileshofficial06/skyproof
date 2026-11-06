@@ -953,7 +953,6 @@ const LABEL_LIFT = new THREE.Vector3(0, 0.32, 0);
 
 export default function Scene3D({ permit, drone, trail, people, props, fx = {}, follow = true, compact, focus, getDrone, mood = "day" }: SceneProps) {
   const dusk = mood === "dusk";
-  const dark = dusk;
   const tone = TONE[drone.status];
   const labelEl = useRef<HTMLDivElement>(null);
   const shared = useRef({ pos: new THREE.Vector3(...v(drone.pos[0], drone.pos[1], drone.alt)), heading: 0 });
@@ -1019,10 +1018,10 @@ export default function Scene3D({ permit, drone, trail, people, props, fx = {}, 
       </Canvas>
       <div ref={labelEl} className="pointer-events-none absolute left-0 top-0 z-20" style={{ visibility: "hidden" }}>
         {fx.label && (
-            <div style={{ minWidth: 200, background: dark ? "rgba(11,16,23,0.9)" : "rgba(255,253,248,0.96)", border: dark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e3ded3", color: dark ? "#e6edf5" : undefined, borderLeft: `4px solid ${tone}`, borderRadius: 8, padding: "7px 10px", fontFamily: "var(--font-geist-sans), system-ui", boxShadow: "0 8px 24px rgba(20,22,26,0.16)", backdropFilter: "blur(4px)" }}>
-              {fx.label.tag && <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#6b6f76" }}>{fx.label.tag}</div>}
-              <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#ffffff" : "#15171a", whiteSpace: "nowrap" }}>{fx.label.title}</div>
-              {fx.label.sub && <div style={{ fontSize: 11.5, color: dark ? "#94a3b3" : "#55595f", maxWidth: 260, marginTop: 2 }}>{fx.label.sub}</div>}
+            <div style={{ minWidth: 200, background: "rgba(10,12,38,0.82)", border: "1px solid rgba(255,255,255,0.14)", color: "#e6edf5", borderLeft: `4px solid ${tone}`, borderRadius: 8, padding: "7px 10px", fontFamily: "var(--font-geist-sans), system-ui", boxShadow: "0 8px 24px rgba(20,22,26,0.16)", backdropFilter: "blur(4px)" }}>
+              {fx.label.tag && <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#b4a2ff" }}>{fx.label.tag}</div>}
+              <div style={{ fontSize: 14, fontWeight: 600, color: "#ffffff", whiteSpace: "nowrap" }}>{fx.label.title}</div>
+              {fx.label.sub && <div style={{ fontSize: 11.5, color: "#c3c6ea", maxWidth: 260, marginTop: 2 }}>{fx.label.sub}</div>}
             </div>
           )}
       </div>

@@ -1,6 +1,6 @@
 "use client";
 // "How it works" as a horizontal pipeline: four stations on one line, a packet travels between them,
-// and the active station opens below. Auto-plays while on screen (pauses on hover); click to jump.
+// and the active station opens below. Auto-plays while on screen; click a step (or Back/Next) to jump.
 import { useEffect, useState } from "react";
 import { useInView } from "@/components/motion";
 import { cx } from "@/components/ui";
@@ -44,7 +44,7 @@ const DWELL = 5200;
 export function Story() {
   const [ref, seen] = useInView<HTMLElement>(false, "0px");
   const [step, setStep] = useState(0);
-  const [hold, setHold] = useState(false);
+  const hold = false;
   const [tick, setTick] = useState(0); // restarts the progress bar when the user jumps
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export function Story() {
   };
 
   return (
-    <section id="how" ref={ref} className="scroll-mt-24" onMouseEnter={() => setHold(true)} onMouseLeave={() => setHold(false)}>
+    <section id="how" ref={ref} className="scroll-mt-24">
       <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#c2410c]">How SkyProof works</p>
       <h2 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight tracking-[-0.02em] text-[#15171a] md:text-4xl">0G decides and records. Chainlink judges. Arc pays.</h2>
 

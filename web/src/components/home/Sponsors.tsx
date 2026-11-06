@@ -85,7 +85,7 @@ export function Sponsors() {
             <button onClick={() => setOpen(s.key)} className={cx("group w-full rounded-xl border bg-[#fffdf8] p-5 text-left transition-all duration-300", open === s.key ? "shadow-[0_14px_40px_rgba(20,22,26,0.10)]" : "border-[#e3ded3] hover:-translate-y-0.5")} style={{ borderColor: open === s.key ? s.color : undefined }}>
               <div className="flex items-center justify-between">
                 <span className="text-2xl font-semibold tracking-tight text-[#15171a]">{s.name}</span>
-                <span className="rounded-full px-2.5 py-0.5 font-mono text-[11px] font-semibold text-white" style={{ background: s.color }}>
+                <span className="rounded-full border px-2.5 py-0.5 font-mono text-[11px] font-semibold text-[#f5f6ff]" style={{ borderColor: s.color, background: `${s.color}26` }}>
                   {s.job}
                 </span>
               </div>
@@ -130,12 +130,12 @@ export function Sponsors() {
             </div>
           </div>
           <div className="grid gap-4">
-            <div className="boot rounded-xl p-5 text-white" style={{ background: s.color, ["--d" as string]: "200ms" }}>
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] opacity-80">Why {s.name}</p>
+            <div className="boot rounded-xl border border-l-[3px] border-white/10 bg-[#0c0e2a]/70 p-5 text-[#f5f6ff] backdrop-blur-lg" style={{ borderLeftColor: s.color, ["--d" as string]: "200ms" }}>
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em]" style={{ color: s.color === "#375bd2" ? "#8ea5f0" : s.color === "#0e8ea0" ? "#5fd0de" : "#b4a2ff" }}>Why {s.name}</p>
               <p className="mt-2 text-[15px] leading-relaxed">{s.why}</p>
             </div>
-            <div className="boot rounded-xl border border-[#f0c4c4] bg-[#fdf0f0] p-5" style={{ ["--d" as string]: "320ms" }}>
-              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#b91c1c]">Without it</p>
+            <div className="boot rounded-xl border border-l-[3px] border-white/10 border-l-[#f87171] bg-[#0c0e2a]/70 p-5 backdrop-blur-lg" style={{ ["--d" as string]: "320ms" }}>
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#fca5a5]">Without it</p>
               <p className="mt-2 text-[15px] leading-relaxed text-[#45484e]">{s.without}</p>
             </div>
           </div>
