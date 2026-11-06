@@ -1,0 +1,16 @@
+HTTP 200 in 2631 ms
+response id: chatcmpl-b30a7598-9f22-9b0c-b82d-c7cf70c43054
+model: qwen3.8-flash
+0G/verification headers: {
+  'x-0g-e2ee': 'none',
+  'x-0g-gateway-instance': '3dabda3e87804111350bbd06e9e9cff5cfea2b87',
+  'x-accel-buffering': 'no',
+  'x-cloud-trace-context': 'bcd4bdec3c4065d9f488ad41ff315a0d',
+  'x-provider': '0x000000003f486c7198d6203568a98d02b91f8044',
+  'x-ratelimit-limit-requests': '500',
+  'x-ratelimit-remaining-requests': '499',
+  'x-ratelimit-reset-requests': '2026-11-06T02:48:00Z',
+  'x-request-id': '6fdfccd1a05ab797, 6f31e9e8-7dac-4074-9bf0-6f81e2195a3e'
+}
+0G trace (request id, provider): {"billing":{"currency":"usd","input_cost":"39","output_cost":"13","total_cost":"52","total_cost_usd_micro":"52"},"provider":"0x000000003f486c7198d6203568a98d02b91f8044","provider_identity":"aliyun","request_id":"6f31e9e8-7dac-4074-9bf0-6f81e2195a3e"}
+answer: {"verdict":"ALLOW","code":"OK","reason":"No people detected in the drop zone."}

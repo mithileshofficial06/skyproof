@@ -1,0 +1,17 @@
+$ tsx --test src/**/*.test.ts
+✔ segment encryption round-trips and rejects a wrong key or a moved segment (2.5387ms)
+✔ an honest flight verifies and gets REVIEW (45.4094ms)
+✔ editing a record is caught (18.9896ms)
+✔ deleting a record is caught (18.9947ms)
+✔ re-signing a forged record with another key is caught (42.7555ms)
+✔ a record not matching its on-chain anchor is caught (23.8769ms)
+✔ a wrong permit is caught (23.7637ms)
+✔ cheating flight: no-fly zone + unapproved drop give B1 and B3 (13.6908ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1111.2684

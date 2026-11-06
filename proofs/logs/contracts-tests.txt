@@ -1,0 +1,19 @@
+$ hardhat test
+◇ injected env (14) from ..\.env
+
+
+  DroneRegistry
+    ✔ only the admin can register airframes, permits and models (1402ms)
+    ✔ tracks the model + prompt allowlist (91ms)
+    ✔ rejects a permit for an unknown airframe or an empty window (45ms)
+
+  FlightLog
+    ✔ opens a flight only for the operator with the current, valid permit
+    ✔ refuses a flight when the permit has expired
+    ✔ allows one open flight per airframe (49ms)
+    ✔ anchors with strictly increasing seq, only by the operator (57ms)
+    ✔ closes with a final anchor, then rejects further anchors and frees the airframe (45ms)
+
+
+  8 passing (2s)
+
