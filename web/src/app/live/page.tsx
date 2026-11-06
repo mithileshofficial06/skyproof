@@ -46,14 +46,6 @@ export default function Live() {
   const [boot, setBoot] = useState<{ at: number; permitHash: string } | null>(null);
   const endBoot = useCallback(() => setBoot(null), []);
 
-  // the whole Live page is the cockpit: dark behind the content too
-  useEffect(() => {
-    const prev = document.body.style.background;
-    document.body.style.background = "#0b1017";
-    return () => {
-      document.body.style.background = prev;
-    };
-  }, []);
   const seq = useRef(0);
   const tNow = useRef(0);
   const buf = useRef<LiveState[]>([]);
