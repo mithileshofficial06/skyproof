@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "gen:sample": "tsx scripts/gen-sample-flight.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
@@ -35,6 +37,7 @@
     "jsdom": "^30.1.3",
     "leva": "^0.10.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5",
     "vitest": "^5.1.0"
   }
