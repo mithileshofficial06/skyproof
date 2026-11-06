@@ -3,7 +3,7 @@
 // Sim coordinates: metres on a 1:50 city block (x east, y north, alt up) -> three.js (x, alt, -y).
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Edges, Html, Line, OrbitControls, Sky, Text as DreiText, useGLTF } from "@react-three/drei";
-import { type ComponentProps, type MutableRefObject, Suspense, useMemo, useRef } from "react";
+import { type ComponentProps, memo, type MutableRefObject, Suspense, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { Permit, Person, Prop, XY } from "@/lib/flight";
 
@@ -40,6 +40,7 @@ export interface SceneProps {
   fx?: SceneFx;
   follow?: boolean;
   compact?: boolean;
+  focus?: [number, number, number] | null; // sim x, y, alt: cinematic close-up target
 }
 
 function inPoly([x, y]: XY, poly: XY[]) {
@@ -169,12 +170,12 @@ function City({ permit }: { permit: Permit }) {
           blocks.push({ x: x + (r() - 0.5) * 0.45, y: y + (r() - 0.5) * 0.45, w: 0.28 + r() * 0.3, d: 0.28 + r() * 0.3, h: 0.25 + r() * 1.5, c: palette[Math.floor(r() * palette.length)] });
       }
     const trees: XY[] = [];
-    for (let i = 0; i < 110; i++) {
+    for (let i = 0; i < 60; i++) {
       const p: XY = [g.x0 + r() * (g.x1 - g.x0), g.y0 + r() * (g.y1 - g.y0)];
       const near = (q: XY, d: number) => Math.hypot(p[0] - q[0], p[1] - q[1]) < d;
       if (permit.noFly.some((z) => inPoly(p, z.polygon))) continue;
       if (Object.values(permit.dropZones).some((q) => near(q, 0.7)) || Object.values(permit.rallyPoints).some((q) => near(q, 0.5))) continue;
-      if (Math.abs(p[1] - 0.15) < 0.45 || Math.abs(p[0] - 3.5) < 0.45 || Math.abs(p[1] - 3.0) < 0.35 || near([0.65, 1.75], 0.45)) continue;
+      if (Math.abs(p[1] - 0.15) < 0.55 || Math.abs(p[0] - 3.5) < 0.55 || Math.abs(p[1] - 3.0) < 0.45 || Math.abs(p[1] - 0.95) < 0.3 || near([0.65, 1.75], 0.5)) continue;
       trees.push(p);
     }
     return { blocks, trees };
@@ -216,7 +217,7 @@ function City({ permit }: { permit: Permit }) {
         <Building key={i} b={b} facade={facade} />
       ))}
       {/* sidewalk kerb around the park */}
-      <mesh rotation-x={-Math.PI / 2} position={v(cx, cy, 0.0035)}>
+      <mesh rotation-x={-Math.PI / 2} position={v(cx, cy, 0.003)}>
         <planeGeometry args={[g.x1 - g.x0 + 0.16, g.y1 - g.y0 + 0.16]} />
         <meshStandardMaterial color="#d8d2c5" />
       </mesh>
@@ -261,35 +262,9 @@ function City({ permit }: { permit: Permit }) {
           </mesh>
         );
       })}
-      {trees.map((p, i) =>
-        i % 3 === 0 ? (
-          <group key={i} position={v(p[0], p[1], 0)}>
-            <mesh position={[0, 0.05, 0]} castShadow>
-              <cylinderGeometry args={[0.012, 0.016, 0.1, 6]} />
-              <meshStandardMaterial color="#6b4f35" />
-            </mesh>
-            <mesh position={[0, 0.16, 0]} castShadow>
-              <coneGeometry args={[0.075, 0.22, 8]} />
-              <meshStandardMaterial color="#3f6b35" roughness={1} />
-            </mesh>
-          </group>
-        ) : (
-          <group key={i} position={v(p[0], p[1], 0)} scale={0.8 + (i % 4) * 0.12}>
-            <mesh position={[0, 0.06, 0]} castShadow>
-              <cylinderGeometry args={[0.01, 0.015, 0.12, 6]} />
-              <meshStandardMaterial color="#6b4f35" />
-            </mesh>
-            <mesh position={[0, 0.16, 0]} castShadow>
-              <icosahedronGeometry args={[0.085, 1]} />
-              <meshStandardMaterial color={["#5d8b45", "#6e9a4f", "#4f7d3c"][i % 3]} roughness={1} flatShading />
-            </mesh>
-            <mesh position={[0.04, 0.2, 0.02]} castShadow>
-              <icosahedronGeometry args={[0.055, 1]} />
-              <meshStandardMaterial color={["#6e9a4f", "#5d8b45", "#78a65a"][i % 3]} roughness={1} flatShading />
-            </mesh>
-          </group>
-        ),
-      )}
+      {trees.map((p, i) => (
+        <Tree key={i} xy={p} i={i} />
+      ))}
     </group>
   );
 }
@@ -448,30 +423,106 @@ function Sign({ xy, text }: { xy: XY; text: string }) {
 }
 
 const SHIRTS = ["#c2410c", "#1d4ed8", "#7c3aed", "#047857", "#be185d", "#0e7490"];
-function Walker({ xy, shirt, i }: { xy: XY; shirt: string; i: number }) {
-  const ref = useRef<THREE.Group>(null);
+const SKIN = ["#c99a72", "#8d5a3b", "#e2b48f", "#a8714c"];
+const PANTS = ["#1f2937", "#334155", "#44403c", "#1e3a5f"];
+function Person({ xy, shirt, i, walk }: { xy: XY; shirt: string; i: number; walk: boolean }) {
+  const root = useRef<THREE.Group>(null);
+  const lLeg = useRef<THREE.Group>(null);
+  const rLeg = useRef<THREE.Group>(null);
+  const lArm = useRef<THREE.Group>(null);
+  const rArm = useRef<THREE.Group>(null);
   useFrame(({ clock }) => {
-    if (!ref.current) return;
-    const k = clock.elapsedTime * 1.6 + i;
-    ref.current.rotation.y = Math.sin(k * 0.4) * 0.6;
-    ref.current.position.y = Math.abs(Math.sin(k * 2)) * 0.006;
+    const k = clock.elapsedTime * (walk ? 5 : 1.2) + i * 1.7;
+    const sw = walk ? Math.sin(k) * 0.5 : Math.sin(k) * 0.05;
+    if (lLeg.current) lLeg.current.rotation.x = sw;
+    if (rLeg.current) rLeg.current.rotation.x = -sw;
+    if (lArm.current) lArm.current.rotation.x = -sw * 0.8;
+    if (rArm.current) rArm.current.rotation.x = sw * 0.8;
+    if (root.current) {
+      root.current.rotation.y = walk ? clock.elapsedTime * 0.25 + i : Math.sin(clock.elapsedTime * 0.3 + i) * 0.5;
+      root.current.position.y = walk ? Math.abs(Math.sin(k)) * 0.006 : 0;
+    }
   });
+  const skin = SKIN[i % SKIN.length];
+  const pants = PANTS[i % PANTS.length];
+  // ~0.30 units tall: shorter than trees (~0.6) and buildings, a bit taller than the drone is wide
   return (
     <group position={v(xy[0], xy[1], 0)}>
-      <group ref={ref}>
-        <mesh position={[0, 0.09, 0]} castShadow>
-          <capsuleGeometry args={[0.032, 0.11, 4, 10]} />
-          <meshStandardMaterial color="#1f2937" />
-        </mesh>
-        <mesh position={[0, 0.2, 0]} castShadow>
-          <capsuleGeometry args={[0.045, 0.09, 4, 10]} />
+      <group ref={root}>
+        {[-1, 1].map((sd) => (
+          <group key={sd} ref={sd < 0 ? lLeg : rLeg} position={[sd * 0.022, 0.13, 0]}>
+            <mesh position={[0, -0.065, 0]} castShadow>
+              <capsuleGeometry args={[0.016, 0.1, 3, 8]} />
+              <meshStandardMaterial color={pants} />
+            </mesh>
+            <mesh position={[0, -0.125, 0.01]}>
+              <boxGeometry args={[0.03, 0.015, 0.045]} />
+              <meshStandardMaterial color="#1c1917" />
+            </mesh>
+          </group>
+        ))}
+        <mesh position={[0, 0.185, 0]} castShadow>
+          <capsuleGeometry args={[0.04, 0.07, 3, 10]} />
           <meshStandardMaterial color={shirt} />
         </mesh>
-        <mesh position={[0, 0.31, 0]} castShadow>
-          <sphereGeometry args={[0.036, 16, 16]} />
-          <meshStandardMaterial color="#c99a72" />
+        {[-1, 1].map((sd) => (
+          <group key={sd} ref={sd < 0 ? lArm : rArm} position={[sd * 0.052, 0.225, 0]}>
+            <mesh position={[0, -0.05, 0]} castShadow>
+              <capsuleGeometry args={[0.012, 0.075, 3, 8]} />
+              <meshStandardMaterial color={shirt} />
+            </mesh>
+            <mesh position={[0, -0.1, 0]}>
+              <sphereGeometry args={[0.012, 8, 8]} />
+              <meshStandardMaterial color={skin} />
+            </mesh>
+          </group>
+        ))}
+        <mesh position={[0, 0.262, 0]}>
+          <cylinderGeometry args={[0.012, 0.014, 0.02, 8]} />
+          <meshStandardMaterial color={skin} />
+        </mesh>
+        <mesh position={[0, 0.292, 0]} castShadow>
+          <sphereGeometry args={[0.03, 16, 16]} />
+          <meshStandardMaterial color={skin} />
+        </mesh>
+        <mesh position={[0, 0.305, -0.004]}>
+          <sphereGeometry args={[0.031, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color={i % 2 ? "#1c1917" : "#57351f"} />
         </mesh>
       </group>
+    </group>
+  );
+}
+
+function Tree({ xy, i }: { xy: XY; i: number }) {
+  const s = 0.85 + (i % 5) * 0.08;
+  if (i % 3 === 0)
+    return (
+      <group position={v(xy[0], xy[1], 0)} scale={s}>
+        <mesh position={[0, 0.07, 0]} castShadow>
+          <cylinderGeometry args={[0.018, 0.026, 0.14, 7]} />
+          <meshStandardMaterial color="#5b4030" />
+        </mesh>
+        {[[0.2, 0.24, 0.18], [0.16, 0.2, 0.33], [0.11, 0.17, 0.46]].map(([r, h, y], k) => (
+          <mesh key={k} position={[0, y, 0]} castShadow>
+            <coneGeometry args={[r, h, 9]} />
+            <meshStandardMaterial color={["#2f5d34", "#386b3c", "#417944"][k]} roughness={0.95} />
+          </mesh>
+        ))}
+      </group>
+    );
+  return (
+    <group position={v(xy[0], xy[1], 0)} scale={s}>
+      <mesh position={[0, 0.13, 0]} castShadow>
+        <cylinderGeometry args={[0.02, 0.03, 0.26, 7]} />
+        <meshStandardMaterial color="#6b4a33" />
+      </mesh>
+      {[[0, 0.36, 0, 0.15], [0.08, 0.31, 0.04, 0.11], [-0.07, 0.32, -0.03, 0.115], [0.01, 0.45, -0.02, 0.1]].map(([x, y, z, r], k) => (
+        <mesh key={k} position={[x, y, z]} castShadow>
+          <icosahedronGeometry args={[r, 2]} />
+          <meshStandardMaterial color={["#4f7f3a", "#5a8c41", "#46743a", "#679948"][(k + i) % 4]} roughness={0.95} />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -664,9 +715,21 @@ function Trail({ trail, permit }: { trail: { pos: XY; alt: number }[]; permit: P
 }
 
 // Camera: starts wide, flies in, then follows behind and slightly to the side of the drone.
-function CameraRig({ shared, follow }: { shared: Shared; follow: boolean }) {
+function CameraRig({ shared, follow, focus }: { shared: Shared; follow: boolean; focus?: [number, number, number] | null }) {
   const look = useRef(new THREE.Vector3(1.9, 0, -1.8));
   useFrame((state, dt) => {
+    if (focus) {
+      // close-up on what is about to happen, seen from the drone's side
+      const f = new THREE.Vector3(...v(focus[0], focus[1], focus[2]));
+      const d = shared.current.pos.clone().sub(f).setY(0);
+      if (d.lengthSq() < 0.01) d.set(-1, 0, 1);
+      d.normalize();
+      const desired = f.clone().addScaledVector(d, 2.3).add(new THREE.Vector3(0.6, 1.3, 0.4));
+      state.camera.position.lerp(desired, Math.min(1, dt * 1.8));
+      look.current.lerp(f, Math.min(1, dt * 3));
+      state.camera.lookAt(look.current);
+      return;
+    }
     if (!follow) return;
     const p = shared.current.pos;
     const h = shared.current.heading;
@@ -681,21 +744,25 @@ function CameraRig({ shared, follow }: { shared: Shared; follow: boolean }) {
   return null;
 }
 
-export default function Scene3D({ permit, drone, trail, people, props, fx = {}, follow = true, compact }: SceneProps) {
+const CityM = memo(City);
+const AirportM = memo(Airport);
+const ZonesM = memo(Zones);
+
+export default function Scene3D({ permit, drone, trail, people, props, fx = {}, follow = true, compact, focus }: SceneProps) {
   const shared = useRef({ pos: new THREE.Vector3(...v(drone.pos[0], drone.pos[1], drone.alt)), heading: 0 });
   return (
-    <Canvas shadows dpr={[1, 2]} camera={{ position: [1.9, 7.5, 5.5], fov: compact ? 38 : 42, near: 0.02, far: 80 }} gl={{ antialias: true }}>
+    <Canvas shadows dpr={[1, 2]} camera={{ position: [1.9, 7.5, 5.5], fov: compact ? 38 : 42, near: 0.05, far: 60 }} gl={{ antialias: true, logarithmicDepthBuffer: true }}>
       <Sky sunPosition={[6, 4, 2]} turbidity={6} rayleigh={1.2} mieCoefficient={0.004} />
       <fog attach="fog" args={["#dfe7ec", 10, 30]} />
       <hemisphereLight args={["#f1f5f9", "#8a7f6c", 0.75]} />
       <directionalLight position={[6, 9, 4]} intensity={2} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-8} shadow-camera-right={8} shadow-camera-top={8} shadow-camera-bottom={-8} shadow-bias={-0.0004} />
       <Suspense fallback={null}>
-        <City permit={permit} />
-        <Airport permit={permit} />
-        <Zones permit={permit} />
+        <CityM permit={permit} />
+        <AirportM permit={permit} />
+        <ZonesM permit={permit} />
         {props.map((p, i) => (p.kind === "crane" ? <Crane key={i} tower={p.tower!} boomEndX={p.boomEndX!} boomZ={p.boomZ!} /> : <Sign key={i} xy={p.xy!} text={p.text ?? ""} />))}
         {people.map((p, i) => (
-          <Walker key={`${p.xy[0]}-${p.xy[1]}-${i}`} xy={p.xy} i={i} shirt={p.role === "crowd" ? SHIRTS[i % SHIRTS.length] : "#b91c1c"} />
+          <Person key={`${p.xy[0]}-${p.xy[1]}-${i}`} xy={p.xy} i={i} walk={p.role === "crowd"} shirt={p.role === "crowd" ? SHIRTS[i % SHIRTS.length] : "#b91c1c"} />
         ))}
         <Trail trail={trail} permit={permit} />
         {fx.dropped && <Package pos={fx.dropped.pos} k={fx.dropped.k} />}
@@ -703,8 +770,8 @@ export default function Scene3D({ permit, drone, trail, people, props, fx = {}, 
         {fx.gust && <Gust shared={shared} />}
         {fx.beamTo && <Beam to={fx.beamTo} shared={shared} />}
       </Suspense>
-      <CameraRig shared={shared} follow={follow} />
-      {!follow && <OrbitControls target={[1.9, 0.2, -1.8]} maxPolarAngle={Math.PI / 2.15} minDistance={1} maxDistance={14} enableDamping />}
+      <CameraRig shared={shared} follow={follow} focus={focus} />
+      {!follow && !focus && <OrbitControls target={[1.9, 0.2, -1.8]} maxPolarAngle={Math.PI / 2.15} minDistance={1} maxDistance={14} enableDamping />}
     </Canvas>
   );
 }

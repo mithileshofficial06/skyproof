@@ -2,6 +2,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ARC_EXPLORER, buildTimeline, type FlightFile, sampleAt, sceneAt, ZG_EXPLORER } from "@/lib/flight";
+import { buildBeats, type Beat } from "@/lib/beats";
 import { deriveFx } from "@/lib/fx";
 import { EventFeed } from "./EventFeed";
 import { Badge, cx, HashLink, Panel, Stat } from "./ui";
@@ -18,6 +19,31 @@ export default function FlightReplay({ flight, autoplay = true, compact = false 
   const [speed, setSpeed] = useState(compact ? 2 : 1);
   const [follow, setFollow] = useState(true);
   const last = useRef<number | null>(null);
+  const beats = useMemo(() => buildBeats(tl), [tl]);
+  const [beat, setBeat] = useState<Beat | null>(null);
+  const shown = useRef<Set<number>>(new Set());
+  const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const endBeat = useCallback(() => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    setBeat(null);
+    setPlaying(true);
+  }, []);
+  // Before each incident: pause, fly the camera to it, explain what is about to happen.
+  useEffect(() => {
+    if (!playing || beat) return;
+    const b = beats.find((x, i) => x.t <= t && t - x.t < 1.5 && !shown.current.has(i));
+    if (!b) return;
+    shown.current.add(beats.indexOf(b));
+    setBeat(b);
+    setPlaying(false);
+    resumeTimer.current = setTimeout(() => {
+      setBeat(null);
+      setPlaying(true);
+    }, compact ? 3200 : 4500);
+  }, [t, playing, beat, beats, compact]);
+  useEffect(() => () => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+  }, []);
 
   useEffect(() => {
     if (!playing) return;
@@ -43,10 +69,21 @@ export default function FlightReplay({ flight, autoplay = true, compact = false 
     };
   }, [playing, speed, tl.duration, compact]);
 
-  const seek = useCallback((x: number) => setT(Math.max(0, Math.min(tl.duration, x))), [tl.duration]);
+  const seek = useCallback(
+    (x: number) => {
+      const n = Math.max(0, Math.min(tl.duration, x));
+      beats.forEach((b, i) => {
+        if (b.t > n) shown.current.delete(i);
+      });
+      setT(n);
+    },
+    [tl.duration, beats],
+  );
   const s = sampleAt(tl.samples, t);
   const scene = sceneAt(tl.scenes, t);
-  const trail = useMemo(() => tl.samples.filter((x) => x.t <= t).map((x) => ({ pos: x.pos, alt: x.alt })).concat([{ pos: s.pos, alt: s.alt }]), [tl.samples, t, s.pos, s.alt]);
+  // trail only changes when a new 2 Hz sample is passed (no per-frame geometry rebuilds)
+  const nSamples = useMemo(() => tl.samples.filter((x) => x.t <= t).length, [tl.samples, t]);
+  const trail = useMemo(() => tl.samples.slice(0, nSamples).map((x) => ({ pos: x.pos, alt: x.alt })), [tl.samples, nSamples]);
   const fx = useMemo(() => deriveFx(tl.events, t, (tt) => sampleAt(tl.samples, tt), s.windMs > tl.permit.maxWindMs), [tl, t, s.windMs]);
   const status = fx.label?.tone ?? "info";
   const log = tl.events.filter((e) => e.t <= t && e.kind !== "scene").slice(-4);
@@ -54,7 +91,24 @@ export default function FlightReplay({ flight, autoplay = true, compact = false 
 
   const scenePane = (
     <div className={cx("relative overflow-hidden rounded-lg border border-[#d9d3c6] bg-[#dfe7ec]", compact ? "h-full" : "h-[62vh] min-h-[460px]")}>
-      <Scene3D permit={tl.permit} drone={{ pos: s.pos, alt: s.alt, vel: s.vel, status }} trail={trail} people={scene.people} props={scene.props} fx={fx} follow={follow} compact={compact} />
+      <Scene3D permit={tl.permit} drone={{ pos: s.pos, alt: s.alt, vel: s.vel, status }} trail={trail} people={scene.people} props={scene.props} fx={beat ? { ...fx, label: undefined } : fx} follow={follow} compact={compact} focus={beat?.focus ?? null} />
+      {beat && (
+        <div className="absolute inset-x-0 top-14 z-10 mx-auto w-[min(520px,90%)] rounded-lg border border-[#d9d3c6] bg-[#fffdf8] p-4 shadow-[0_10px_30px_rgba(20,22,26,0.18)]">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-[#c2410c]">Coming up · t+{beat.at.toFixed(1)}s</span>
+            {!compact && (
+              <button onClick={endBeat} className="rounded border border-[#e3ded3] px-2 py-0.5 text-[11px] text-[#33363b] hover:bg-[#f6f3ec]">
+                Continue
+              </button>
+            )}
+          </div>
+          <div className="mt-1.5 text-lg font-semibold text-[#15171a]">{beat.title}</div>
+          <p className="mt-1 text-sm leading-relaxed text-[#45484e]">{beat.text}</p>
+          <div className="mt-3 h-0.5 overflow-hidden rounded bg-[#ece7dc]">
+            <div className="h-full bg-[#c2410c]" style={{ animation: `beatbar ${compact ? 3.2 : 4.5}s linear forwards` }} />
+          </div>
+        </div>
+      )}
       {!compact && (
         <>
           <div className="pointer-events-none absolute left-3 top-3 flex gap-px overflow-hidden rounded-md border border-[#d9d3c6] bg-[#fffdf8]/95 text-[#15171a]">
@@ -116,6 +170,9 @@ export default function FlightReplay({ flight, autoplay = true, compact = false 
               .map((e) => (
                 <button key={`${e.seq}-${e.kind}`} title={e.title} onClick={() => seek(e.t)} className={cx("absolute top-1/2 h-3 w-[3px] -translate-x-1/2 -translate-y-1/2", MARK[e.status])} style={{ left: `${(e.t / tl.duration) * 100}%` }} />
               ))}
+            {beats.map((b) => (
+              <span key={b.at} title={b.title} className="pointer-events-none absolute -top-1 h-2 w-2 -translate-x-1/2 rotate-45 bg-[#c2410c]" style={{ left: `${(b.at / tl.duration) * 100}%` }} />
+            ))}
             <input type="range" min={0} max={tl.duration} step={0.05} value={t} onChange={(e) => seek(Number(e.target.value))} className="absolute inset-0 h-full w-full cursor-pointer opacity-0" aria-label="timeline" />
           </div>
           <span className="w-24 text-right font-mono text-xs tabular-nums text-[#55595f]">
@@ -133,7 +190,7 @@ export default function FlightReplay({ flight, autoplay = true, compact = false 
       </div>
       <Panel title="Everything the drone did" right={<span className="font-mono text-[11px] text-[#8a8d93]">{tl.events.filter((e) => e.t <= t).length}/{tl.events.length}</span>} className="xl:sticky xl:top-20 xl:self-start">
         <div className="-m-4 max-h-[70vh] overflow-y-auto xl:max-h-[calc(100vh-10rem)]">
-          <EventFeed events={tl.events} now={t} onSeek={seek} />
+          <EventFeed events={tl.events} now={tl.events.filter((e) => e.t <= t).at(-1)?.t ?? -1} onSeek={seek} />
         </div>
       </Panel>
     </div>
