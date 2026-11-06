@@ -4,7 +4,7 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import { toFlightRecord } from "@/lib/data/map";
 import type { FlightFile } from "@/lib/flight";
-import { cascadeK, CASCADE_S, divergence, pathPoints, RAMP_S, TRUTHS_SIZE, VERDICT_AT_S } from "@/lib/telemetry";
+import { cascadeK, CASCADE_S, divergence, pathPoints, RAMP_S, sealedAt, TRUTHS_SIZE, VERDICT_AT_S } from "@/lib/telemetry";
 
 const f = toFlightRecord(JSON.parse(readFileSync(new URL("../public/data/sample-flight.json", import.meta.url), "utf8")) as FlightFile, "replay");
 
@@ -42,5 +42,13 @@ describe("hash cascade", () => {
     expect(VERDICT_AT_S).toBeLessThan(1.7);
     expect(divergence(0, 1)).toBeCloseTo(0.375, 9);
     expect(divergence(99, 1)).toBe(2.5);
+  });
+});
+
+describe("black box", () => {
+  it("is absent in the hero and fully sealed by the end of the Problem section", () => {
+    expect(sealedAt(0)).toBe(0);
+    expect(sealedAt(0.05)).toBe(0);
+    expect(sealedAt(0.2)).toBeGreaterThan(1);
   });
 });

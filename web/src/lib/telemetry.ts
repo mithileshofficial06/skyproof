@@ -2,7 +2,7 @@
 // hash-cascade timing (6.12). Pure functions, unit-tested.
 import * as THREE from "three";
 import type { PathPoint } from "./data/types";
-import { clamp, easeOutCubic } from "./math";
+import { clamp, easeOutCubic, smoothstep } from "./math";
 
 export const TRUTHS_SIZE = 8; // scene units across (the spec's 36 would overflow the camera's view here)
 export const ALT_EXAG = 1.2; // altitude stretched a little before fitting, so altitude lies are visible
@@ -39,3 +39,6 @@ export function cascadeK(i: number, t: number, n: number, now: number) {
 
 /** how far the claimed trail splits off, in scene units (6.11) */
 export const divergence = (delta: number, range: number) => clamp(Math.abs(delta) / range, 0.15, 1) * 2.5;
+
+/** black-box capsule: how much of it has materialised at a scroll position (Problem section, spec Section 8) */
+export const sealedAt = (scroll: number) => smoothstep(0.1, 0.2, scroll) * 1.02;
