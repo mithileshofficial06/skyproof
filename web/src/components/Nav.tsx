@@ -17,10 +17,10 @@ export function Nav() {
   return (
     <nav className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#0b1017]/92 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between px-5 sm:px-8">
-        <Link href="/" className="cockpit">
+        <Link href="/" className="cockpit shrink-0">
           <Logo className="text-[15px]" dark />
         </Link>
-        <div className="flex items-center gap-1">
+        <div className="flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
           {LINKS.map(([href, label]) => {
             const active = href === "/" ? path === "/" : path.startsWith(href);
             return (
