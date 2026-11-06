@@ -6,7 +6,7 @@
 
 ETHGlobal Mumbai · 5–7 Nov 2026 · Tracks: **0G Physical AI** · **Arc: Advanced Stablecoin Logic (Arc Studio)** · **Chainlink: Best workflow with CRE**
 
-> **Hosted demo:** _add the Vercel link here after deploying_ · Live flights and claims run against the team's flight computer (see [Try it](#try-it-for-judges)).
+> **Hosted demo: https://sky-proof.vercel.app** · Live flights and claims run against the team's flight computer (see [Try it](#try-it-for-judges)). End-to-end test of the hosted site: [`docs/E2E_Test_Report_2026-11-07.md`](docs/E2E_Test_Report_2026-11-07.md).
 
 ---
 
@@ -169,6 +169,7 @@ Workflow: `cre/judge/verdict/workflow.ts`, with the pure rules in `cre/judge/ver
 | #2 | honest flight | **REVIEW** → held for the insurer | [0xff9b97e4…](https://testnet.arcscan.app/tx/0xff9b97e456202c12b31f46f3fad6d093c677acab31bdb6bd4935626012a66cee) |
 | #8 | honest flight (started from the website), judged by the auto-runner | **REVIEW** (34 records intact, wind 2.22 m/s) | [0xbb608b5e…](https://testnet.arcscan.app/tx/0xbb608b5ecaaca43fa562ade29b069d06eef680b6e3a1298ddefb4917ce78dc26) |
 | #9 | same; the victim left, so the auto-runner closed the window itself | **REVIEW** | [0x8adcadd8…](https://testnet.arcscan.app/tx/0x8adcadd8456051dd7531e8c337aaa71a9127ea28290f2af4d8d65af8138173d6) |
+| #10 | cheating operator, flight started through the public site tunnel, judged by the auto-runner | **BREACH** (B1 geofence, B3 unapproved actions; 17 records intact) → victim paid 5 USDC + deposit | [0x0f081515…](https://testnet.arcscan.app/tx/0x0f081515ef0436305d01c6697e09f19d94049fae75017187991ec48c7546f256) |
 
 Full proof pack with screenshots and logs: [`proofs/README.md`](proofs/README.md). 0G requirements mapped to proofs: [`docs/0G_Proof_Sheet.md`](docs/0G_Proof_Sheet.md). Your own 0G AI calls are visible on the 0G dashboard (pc.0g.ai → Console → Activity, key "Skyproof").
 

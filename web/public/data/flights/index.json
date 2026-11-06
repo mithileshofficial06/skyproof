@@ -1,5 +1,34 @@
 [
  {
+  "flightId": "SKY-001-geofence_breach-1793994709528",
+  "scenario": "geofence_breach",
+  "startedAt": 1793994709528,
+  "records": 17,
+  "decisions": 0,
+  "zgDecisions": 0,
+  "intact": true,
+  "verdict": "BREACH",
+  "breaches": [
+   "B3_UNAPPROVED_ACTION",
+   "B1_GEOFENCE"
+  ],
+  "chainFlightId": "0x2210567ead54144cf0ee7dc9acb5f9434fece7e37bc527c4bd865a07ae8bc65f",
+  "claims": []
+ },
+ {
+  "flightId": "SKY-001-people_below-1793994439408",
+  "scenario": "people_below",
+  "startedAt": 1793994439409,
+  "records": 34,
+  "decisions": 8,
+  "zgDecisions": 8,
+  "intact": true,
+  "verdict": "REVIEW",
+  "breaches": [],
+  "chainFlightId": "0x966328d6013d04a18d2b63447ae2dabbef9b12e8a2f46ed5efbc4f6e8011e115",
+  "claims": []
+ },
+ {
   "flightId": "SKY-001-normal-1793993825071",
   "scenario": "normal",
   "startedAt": 1793993825072,

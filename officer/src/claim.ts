@@ -44,8 +44,8 @@ for (;;) {
 const r2 = await send("closeClaimWindow", e.closeClaimWindow(claimId));
 const idx = r2.logs.findIndex((l: any) => { try { return e.interface.parseLog(l)?.name === "ClaimWindowClosed"; } catch { return false; } });
 const c = await e.claims(claimId);
-const out = { claimId, flightId: m.flightId, chainFlightId: m.chainFlightId, closeTx: r2.hash, eventIndex: r2.logs[idx].index, state: CLAIM_STATES[Number(c.state)], cap: usd(c.cap) };
+const out = { claimId, flightId: m.flightId, chainFlightId: m.chainFlightId, closeTx: r2.hash, eventIndex: idx /* position in the receipt, which the CRE CLI expects */, state: CLAIM_STATES[Number(c.state)], cap: usd(c.cap) };
 mkdirSync(`${TMP}claims`, { recursive: true });
 writeFileSync(`${TMP}claims/${claimId}.json`, JSON.stringify(out, null, 2));
 console.log(out);
-console.log(`\nnext: run the Chainlink judge on this event:\n  cd cre/judge && cre workflow simulate verdict --non-interactive --trigger-index 0 --evm-tx-hash ${r2.hash} --evm-event-index ${out.eventIndex} --broadcast`);
+console.log(`\nnext: run the Chainlink judge on this event:\n  cd cre/judge && cre workflow simulate verdict --non-interactive --trigger-index 0 --evm-tx-hash ${r2.hash} --evm-event-index ${out.eventIndex} --broadcast -T staging-settings`);
