@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPublicClient, defineChain, http, keccak256, parseAbi, recoverAddress, stringToBytes, type Hex } from "viem";
+import { canonical } from "@/lib/data/hash";
 import { short, ZG_EXPLORER, type FlightFile, type FlightRecord } from "@/lib/flight";
 import { Badge, cx, Panel } from "./ui";
 
@@ -19,18 +20,6 @@ const ZERO = ("0x" + "00".repeat(32)) as Hex;
 type Anchor = { seq: number; head: string };
 type Mark = "wait" | "ok" | "bad" | "gone" | "tainted";
 type Cheat = "none" | "allow" | "gps" | "delete";
-
-/** Same canonical JSON the officer hashes: keys sorted, no whitespace. */
-function canonical(v: unknown): string {
-  if (v === null || typeof v !== "object") return JSON.stringify(v);
-  if (Array.isArray(v)) return `[${v.map(canonical).join(",")}]`;
-  const o = v as Record<string, unknown>;
-  return `{${Object.keys(o)
-    .sort()
-    .filter((k) => o[k] !== undefined)
-    .map((k) => `${JSON.stringify(k)}:${canonical(o[k])}`)
-    .join(",")}}`;
-}
 
 /** The operator's likely lies, applied to a copy of the record. */
 function cheat(records: FlightRecord[], how: Cheat): { recs: FlightRecord[]; what: string; seq: number | null } {
