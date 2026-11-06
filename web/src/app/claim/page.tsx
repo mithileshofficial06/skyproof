@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { formatUnits, keccak256, parseAbi, stringToHex, type Address, type Hex } from "viem";
+import { formatUnits, hexToString, keccak256, parseAbi, stringToHex, type Address, type Hex } from "viem";
 import escrowAbi from "@/lib/escrowAbi.json";
 import { Badge, cx, HashLink, Panel, Stat } from "@/components/ui";
 import { useIndex } from "@/lib/data";
@@ -154,6 +154,11 @@ export default function Claim() {
         <p className="mt-1 max-w-3xl text-sm text-[#55595f]">Hurt by a SkyProof drone? File a claim on Arc with a 1 USDC refundable deposit. After the 2-minute claim window, the Chainlink judge rebuilds the flight from 0G and, if an objective rule was broken, the operator&apos;s bond pays you automatically.</p>
       </div>
 
+      <Progress
+        stage={claim && claim.verdict > 0 ? 4 : state && state !== "Open" ? 3 : claimId !== null ? 2 : sealed ? 1 : 0}
+        result={claim && claim.verdict > 0 ? (claim.verdict === 1 ? "paid" : "held") : null}
+      />
+
       <div className="grid gap-4 md:grid-cols-4">
         <Stat label="Drone" value="SKY-001" sub={info ? (info.active ? "active (bond ≥ cap)" : "inactive") : "…"} tone={info?.active ? "good" : "warn"} />
         <Stat label="Operator bond" value={info ? formatUnits(info.bond, 6) : "…"} sub="USDC locked on Arc" />
@@ -242,6 +247,8 @@ export default function Claim() {
             <pre className="overflow-x-auto rounded-md bg-[#f6f3ec] p-4 font-mono text-xs text-[#33363b]">{`cd cre/judge
 cre workflow simulate verdict --non-interactive --trigger-index 0 \\
   --evm-tx-hash ${closeTx} --evm-event-index 0 --broadcast -T staging-settings`}</pre>
+            <JudgeRules verdict={claim?.verdict ?? 0} code={claim?.breachCode} />
+            {claim && claim.verdict === 1 && <MoneyFlow amount={formatUnits(claim.cap, 6)} />}
             {claim && claim.verdict > 0 && (
               <div className={cx("rounded-md border p-4", claim.verdict === 1 ? "border-[#b7dcd6] bg-[#ecf7f5]" : "border-[#efd3a6] bg-[#fdf6ea]")}>
                 <div className="text-lg font-semibold text-[#15171a]">{claim.verdict === 1 ? `BREACH · ${formatUnits(claim.cap, 6)} USDC paid to you` : "REVIEW · funds held for the insurer"}</div>
@@ -270,6 +277,93 @@ cre workflow simulate verdict --non-interactive --trigger-index 0 \\
         </Panel>
       )}
       {error && <p className="rounded-md border border-[#f0c4c4] bg-[#fdf0f0] px-4 py-3 text-sm text-[#9b1c1c]">{error}</p>}
+    </div>
+  );
+}
+
+const STAGES = ["Evidence", "Claim on Arc", "Claim window", "Chainlink judge", "Result"];
+function Progress({ stage, result }: { stage: number; result: "paid" | "held" | null }) {
+  return (
+    <div className="flex items-center gap-2">
+      {STAGES.map((l, i) => {
+        const done = i < stage || (i === 4 && !!result);
+        const now = i === stage && !result;
+        const color = i === 4 && result ? (result === "paid" ? "#10b981" : "#b45309") : i <= 1 ? "#7c5cff" : i === 3 ? "#375bd2" : "#0e8ea0";
+        return (
+          <div key={l} className="flex flex-1 items-center gap-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <div className="h-1.5 overflow-hidden rounded-full bg-[#e3ded3]">
+                <div className="h-full rounded-full transition-all duration-700" style={{ width: done ? "100%" : now ? "45%" : "0%", background: color }} />
+              </div>
+              <span className={cx("truncate text-[11px] font-medium", done || now ? "text-[#15171a]" : "text-[#8a8d93]")}>
+                {i === 4 && result ? (result === "paid" ? "Paid ✓" : "Held for insurer") : l}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const RULES = [
+  ["B1_GEOFENCE", "Stayed in the permitted area"],
+  ["B2_ALTITUDE", "Stayed under the height ceiling"],
+  ["B3_UNAPPROVED_ACTION", "Every action had 0G's approval"],
+  ["B4_OVERRIDE_ON_DENY", "Never overrode a DENY"],
+  ["B5_RECORD_BROKEN", "No gaps or edits in the record"],
+  ["B6_UNSAFE_WIND_LAUNCH", "No take-off in unsafe wind"],
+];
+/** The judge's six rules: a blue scan while it runs, then pass / fail. */
+function JudgeRules({ verdict, code }: { verdict: number; code?: Hex }) {
+  const broken = code ? hexToString(code, { size: 32 }).replace(/\0/g, "") : "";
+  return (
+    <div className="relative overflow-hidden rounded-md border border-[#c9d6ef] bg-[#f5f8ff] p-3">
+      {verdict === 0 && <span className="sweep pointer-events-none absolute inset-x-0 h-8 bg-gradient-to-b from-transparent via-[#375bd2]/20 to-transparent" />}
+      <div className="mb-1.5 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.14em] text-[#375bd2]">
+        <span>Chainlink CRE · rules</span>
+        <span>{verdict === 0 ? <span className="blink">waiting for the judge…</span> : verdict === 1 ? "breach found" : "no rule broken"}</span>
+      </div>
+      <div className="grid gap-x-6 sm:grid-cols-2">
+        {RULES.map(([k, l], i) => {
+          const bad = verdict === 1 && broken === k;
+          const ok = verdict > 0 && !bad;
+          return (
+            <div key={k} className={cx("flex items-center gap-2 py-0.5 text-[12px]", verdict > 0 && "boot")} style={{ ["--d" as string]: `${i * 120}ms` }}>
+              <span className={cx("grid h-4 w-4 shrink-0 place-items-center rounded-full text-[9px] font-bold text-white", bad ? "bg-[#b91c1c]" : ok ? (verdict === 1 ? "bg-[#94a3b8]" : "bg-[#0f766e]") : "bg-[#cbd5e1]")}>{bad ? "✗" : ok ? (verdict === 1 ? "·" : "✓") : ""}</span>
+              <span className={cx(bad ? "font-semibold text-[#9b1c1c]" : "text-[#33363b]")}>
+                <span className="mr-1 font-mono text-[10px] text-[#8a8d93]">{k.slice(0, 2)}</span>
+                {l}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+      {verdict === 1 && <p className="mt-1.5 text-[11px] text-[#55595f]">The judge reports the first rule it found broken; the full list is in the Chainlink workflow log.</p>}
+    </div>
+  );
+}
+
+/** USDC moving from the operator's bond to the victim on Arc. */
+function MoneyFlow({ amount }: { amount: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-md border border-[#bfe0e8] bg-[#eef8fa] p-3">
+      <div className="text-center">
+        <div className="font-mono text-[10px] uppercase tracking-wider text-[#155e75]">Operator bond</div>
+        <div className="font-mono text-sm font-semibold text-[#15171a]">−{amount} USDC</div>
+      </div>
+      <div className="relative h-8 flex-1">
+        <div className="absolute inset-x-0 top-1/2 h-px bg-[#bfe0e8]" />
+        {[0, 1, 2, 3, 4].map((i) => (
+          <span key={i} className="coin-lr absolute left-0 top-1 grid h-6 w-6 place-items-center rounded-full bg-[#2775ca] font-mono text-[9px] font-bold text-white shadow" style={{ ["--d" as string]: `${i * 200}ms` }}>
+            $
+          </span>
+        ))}
+      </div>
+      <div className="text-center">
+        <div className="font-mono text-[10px] uppercase tracking-wider text-[#0f5f59]">You</div>
+        <div className="font-mono text-sm font-semibold text-[#0f766e]">+{amount} USDC</div>
+      </div>
     </div>
   );
 }

@@ -60,11 +60,11 @@ export function HashLink({ href, hash, n = 8 }: { href?: string; hash?: string |
 
 export const sourceTone = (s?: string): Tone => (s?.startsWith("0G") ? "zg" : s === "HARD_RULES" ? "warn" : s === "NONE" ? "deny" : "mute");
 
-export function Logo({ className }: { className?: string }) {
+export function Logo({ className, dark }: { className?: string; dark?: boolean }) {
   return (
-    <span className={cx("inline-flex items-center gap-2 font-semibold tracking-tight text-[#15171a]", className)}>
+    <span className={cx("inline-flex items-center gap-2 font-semibold tracking-tight", dark ? "text-white" : "text-[#15171a]", className)}>
       <svg viewBox="0 0 28 28" className="h-7 w-7">
-        <rect width="28" height="28" rx="6" fill="#15171a" />
+        <rect width="28" height="28" rx="6" fill={dark ? "#1b2633" : "#15171a"} />
         <g stroke="#f4f1ea" strokeWidth="1.8" fill="none">
           <circle cx="8.5" cy="8.5" r="3" />
           <circle cx="19.5" cy="8.5" r="3" />

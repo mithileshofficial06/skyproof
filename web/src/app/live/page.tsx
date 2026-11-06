@@ -43,6 +43,17 @@ export default function Live() {
   const ws = useRef<WebSocket | null>(null);
   const [segs, setSegs] = useState<Seg[]>([]);
   const [published, setPublished] = useState<string | null>(null);
+  const [boot, setBoot] = useState<{ at: number; permitHash: string } | null>(null);
+  const endBoot = useCallback(() => setBoot(null), []);
+
+  // the whole Live page is the cockpit: dark behind the content too
+  useEffect(() => {
+    const prev = document.body.style.background;
+    document.body.style.background = "#0b1017";
+    return () => {
+      document.body.style.background = prev;
+    };
+  }, []);
   const seq = useRef(0);
   const tNow = useRef(0);
   const buf = useRef<LiveState[]>([]);
@@ -74,6 +85,7 @@ export default function Live() {
             setFlightId(m.flightId);
             break;
           case "flight":
+            setBoot({ at: Date.now(), permitHash: String(m.permitHash) });
             setFlightId(m.flightId);
             setTrail([]);
             setEvents([]);
@@ -210,7 +222,7 @@ export default function Live() {
   const toggleNet = () => ws.current?.send(JSON.stringify({ type: "control", network: netDown ? "up" : "down" }));
 
   return (
-    <div className="space-y-5 pt-2">
+    <div className="cockpit space-y-5 pt-2">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-[#15171a]">Live mission console</h1>
@@ -237,7 +249,10 @@ cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
         <div className="space-y-4">
           <div className="relative h-[60vh] min-h-[440px] overflow-hidden rounded-lg border border-[#e3ded3] bg-[#dfe7ec]">
             {permit ? (
-              <Scene3D permit={permit} drone={{ pos: state?.pos ?? permit.rallyPoints.HOME, alt: state?.alt ?? 0.05, vel: state?.vel ?? [0, 0, 0], status: fx?.label?.tone ?? status }} trail={trail} people={people} props={props} fx={fx} follow getDrone={getDrone} />
+              <>
+              <Scene3D permit={permit} drone={{ pos: state?.pos ?? permit.rallyPoints.HOME, alt: state?.alt ?? 0.05, vel: state?.vel ?? [0, 0, 0], status: fx?.label?.tone ?? status }} trail={trail} people={people} props={props} fx={fx} follow getDrone={getDrone} mood="dusk" />
+              {boot && <BootSequence key={boot.at} permitHash={boot.permitHash} onDone={endBoot} />}
+              </>
             ) : (
               <div className="grid h-full place-items-center text-sm text-[#8a8d93]">Waiting for the officer…</div>
             )}
@@ -268,6 +283,7 @@ cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
               </div>
             )}
           </div>
+          <BlackBoxStrip events={events} segs={segs} />
           <div className="grid items-start gap-4 md:grid-cols-[1fr_320px]">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               <Stat label="0G decisions" value={`${asked.length}`} />
@@ -291,6 +307,75 @@ cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
         <Panel title="Live decisions" icon={<span className="h-2 w-2 rounded-sm bg-[#c2410c]" />} className="xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
           <div className="max-h-[70vh] overflow-y-auto pr-1">{events.length ? <EventFeed events={shown} now={Number.POSITIVE_INFINITY} /> : <p className="text-sm text-[#8a8d93]">No flight yet.</p>}</div>
         </Panel>
+      </div>
+    </div>
+  );
+}
+
+// Flight start: the checks that must pass before the drone may arm, lit one by one.
+function BootSequence({ permitHash, onDone }: { permitHash: string; onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 4200);
+    return () => clearTimeout(t);
+  }, [onDone]);
+  const lines = [
+    ["Flight permit signed", `${permitHash.slice(0, 14)}…`],
+    ["Link to 0G Private Computer", "OK"],
+    ["Black box opened on 0G Chain", "FlightLog"],
+    ["Sealing to 0G Storage", "every 15 s"],
+    ["Gate armed", "no action without a 0G decision"],
+  ];
+  return (
+    <div className="pointer-events-none absolute inset-0 grid place-items-center bg-[#0b1017]/55 backdrop-blur-[2px]">
+      <div className="w-[min(420px,90%)] rounded-lg border border-[#22d3ee]/40 bg-[#0b1017]/90 p-4 font-mono text-[12px] shadow-[0_0_40px_rgba(34,211,238,0.15)]">
+        <div className="mb-2 text-[10px] uppercase tracking-[0.18em] text-[#22d3ee]">Pre-flight · SKY-001</div>
+        {lines.map(([k, v], i) => (
+          <div key={k} className="boot flex items-center justify-between gap-3 py-0.5" style={{ ["--d" as string]: `${i * 380}ms` }}>
+            <span className="text-[#c5d0db]">
+              <span className="mr-2 text-[#10b981]">✓</span>
+              {k}
+            </span>
+            <span className="text-[#6c7c8d]">{v}</span>
+          </div>
+        ))}
+        <div className="boot mt-2 text-[#22d3ee]" style={{ ["--d" as string]: `${lines.length * 380 + 200}ms` }}>
+          ▸ cleared for take-off<span className="blink">_</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// The black box filling up: one square per record we know of; violet once sealed on 0G Chain.
+function BlackBoxStrip({ events, segs }: { events: FlightEvent[]; segs: Seg[] }) {
+  const sealedTo = segs.reduce((a, g) => Math.max(a, g.toSeq), -1);
+  const known = Math.max(sealedTo, ...events.map((e) => e.recordSeq ?? -1));
+  if (known < 0) return null;
+  const n = known + 1;
+  const from = Math.max(0, n - 140);
+  const lastSeg = segs[segs.length - 1];
+  return (
+    <div className="rounded-lg border border-[#1f2b38] bg-[#101822] px-4 py-3">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.14em]">
+        <span className="text-[#6c7c8d]">Black box · {n} records</span>
+        <span className="text-[#b4a2ff]">
+          {sealedTo + 1} sealed on 0G Chain{lastSeg ? ` · last anchor ${lastSeg.anchorTx.slice(0, 10)}…` : ""}
+        </span>
+      </div>
+      <div className="flex flex-wrap gap-[3px]">
+        {Array.from({ length: n - from }, (_, k) => {
+          const i = from + k;
+          const sealed = i <= sealedTo;
+          const fresh = lastSeg && i >= lastSeg.fromSeq && i <= lastSeg.toSeq;
+          return (
+            <span
+              key={`${i}-${sealed ? segs.length : 0}`}
+              title={`record #${i}${sealed ? " · sealed" : ""}`}
+              className={cx("link-in h-3 w-3 rounded-[3px]", sealed ? "bg-[#7c5cff]" : "border border-[#33475c] bg-[#16212d]", fresh && "seal-pulse")}
+              style={{ animationDelay: fresh ? `${(i - lastSeg!.fromSeq) * 18}ms` : undefined }}
+            />
+          );
+        })}
       </div>
     </div>
   );

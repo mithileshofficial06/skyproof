@@ -17,7 +17,7 @@ const flightLogAbi = parseAbi(["function getAnchors(bytes32 flightId) view retur
 const ZERO = ("0x" + "00".repeat(32)) as Hex;
 
 type Anchor = { seq: number; head: string };
-type Mark = "wait" | "ok" | "bad" | "gone";
+type Mark = "wait" | "ok" | "bad" | "gone" | "tainted";
 type Cheat = "none" | "allow" | "gps" | "delete";
 
 /** Same canonical JSON the officer hashes: keys sorted, no whitespace. */
@@ -42,6 +42,12 @@ function cheat(records: FlightRecord[], how: Cheat): { recs: FlightRecord[]; wha
       d.body.verdict = "ALLOW";
       d.body.reason = "approved";
       return { recs, what: `Record #${d.seq}: 0G's ${was} rewritten as ALLOW`, seq: d.seq };
+    }
+    // no 0G decisions on this flight (gate disabled): forge an approval onto an unapproved action
+    const a = recs.find((r) => r.type === "ACTION" && !r.body?.decisionHash);
+    if (a) {
+      a.body.decisionHash = "0x" + "ab".repeat(32);
+      return { recs, what: `Record #${a.seq}: a fake 0G approval added to ${a.body.cmd?.type ?? "an action"} that never had one`, seq: a.seq };
     }
   }
   if (how === "gps") {
@@ -100,6 +106,7 @@ export default function ProofCheck({ flight }: { flight: FlightFile }) {
       const anchorAt = new Map(anchors.map((a) => [a.seq, a.head.toLowerCase()]));
       let prev: string = ZERO;
       let fail: { text: string; seq: number } | null = null;
+      let failAt = -1;
       for (let i = 0; i < recs.length && !fail; i++) {
         const r = recs[i];
         const { hash, sig, ...unsigned } = r;
@@ -116,6 +123,7 @@ export default function ProofCheck({ flight }: { flight: FlightFile }) {
         if (why) {
           if (m[i] !== "gone") m[i] = "bad";
           fail = { text: why, seq: r.seq };
+          failAt = i;
         } else m[i] = "ok";
         prev = hash;
         if (i % 3 === 0 || fail) {
@@ -128,6 +136,8 @@ export default function ProofCheck({ flight }: { flight: FlightFile }) {
         if (recs.length - 1 < lastAnchor) fail = { text: `0G Chain sealed ${lastAnchor + 1} records but only ${recs.length} were handed over`, seq: recs.length };
       }
       if (run.current !== id) return;
+      // everything after a broken link can no longer be trusted: the break spreads down the chain
+      if (failAt >= 0) for (let k = failAt + 1; k < total; k++) m[k] = "tainted";
       setMarks([...m]);
       setRunning(false);
       setResult(fail ? { ok: false, text: fail.text, seq: fail.seq ?? touched ?? undefined } : { ok: true, text: `All ${recs.length} records re-hashed, linked and signed, and every 0G Chain anchor matches.` });
@@ -157,7 +167,7 @@ export default function ProofCheck({ flight }: { flight: FlightFile }) {
         </button>
         <span className="mx-1 self-center text-[11px] text-[#8a8d93]">Try to cheat:</span>
         {([
-          ["allow", "Change DENY → ALLOW"],
+          ["allow", flight.records.some((r) => r.type === "DECISION") ? "Change DENY → ALLOW" : "Forge a 0G approval"],
           ["gps", "Fake the GPS"],
           ["delete", "Delete a record"],
         ] as [Cheat, string][]).map(([k, label]) => (
@@ -174,7 +184,8 @@ export default function ProofCheck({ flight }: { flight: FlightFile }) {
           <span
             key={i}
             title={`record #${i} · ${flight.records[i]?.type ?? ""}`}
-            className={cx("h-3 w-3 rounded-[2px] transition-colors duration-200", k === "ok" ? "bg-[#0f766e]" : k === "bad" ? "bg-[#b91c1c]" : k === "gone" ? "border border-dashed border-[#b91c1c] bg-transparent" : "bg-[#e3ded3]")}
+            className={cx("h-3 w-3 rounded-[2px] transition-colors duration-200", k === "ok" ? "bg-[#0f766e]" : k === "bad" ? "crack bg-[#b91c1c]" : k === "gone" ? "crack border border-dashed border-[#b91c1c] bg-transparent" : k === "tainted" ? "taint bg-[#f3b4b4]" : "bg-[#e3ded3]")}
+            style={k === "tainted" ? { ["--d" as string]: `${Math.min(900, (i - marks.findIndex((x) => x === "bad" || x === "gone")) * 14)}ms` } : undefined}
           />
         ))}
       </div>

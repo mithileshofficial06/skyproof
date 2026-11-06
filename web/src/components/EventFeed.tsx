@@ -17,11 +17,17 @@ export function EventFeed({ events, now, onSeek }: { events: FlightEvent[]; now:
       {visible.map((e, i) => {
         const latest = i === visible.length - 1;
         return (
-          <div role="button" tabIndex={0} key={`${e.seq}-${e.kind}`} onClick={() => onSeek?.(e.t)} className={cx("relative flex w-full cursor-pointer gap-3 py-3 pl-3 pr-2 text-left transition-colors hover:bg-[#f6f3ec]", latest && "bg-[#f6f3ec]")}>
+          <div role="button" tabIndex={0} key={`${e.seq}-${e.kind}`} onClick={() => onSeek?.(e.t)} className={cx("rowin relative flex w-full cursor-pointer gap-3 py-3 pl-3 pr-2 text-left transition-colors hover:bg-[#f6f3ec]", latest && "bg-[#f6f3ec]")}>
             <span className={cx("absolute left-0 top-3 bottom-3 w-[3px] rounded", BAR[e.status])} />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className={cx("text-[13px] font-semibold", e.status === "breach" ? "text-[#9b1c1c]" : "text-[#15171a]")}>{e.title}</span>
+                {e.kind === "decision" && (
+                  // the verdict lands like a stamp
+                  <span className={cx("stamp rounded-sm border-2 px-1 font-mono text-[10px] font-bold tracking-wider", e.status === "ok" ? "border-[#0f766e] text-[#0f766e]" : e.status === "deny" ? "border-[#b91c1c] text-[#b91c1c]" : "border-[#b45309] text-[#b45309]")} style={{ animationDelay: "120ms" }}>
+                    {e.status === "ok" ? "ALLOW" : e.status === "deny" ? "DENY" : "NO DECISION"}
+                  </span>
+                )}
                 {e.source && <Badge tone={sourceTone(e.source)}>{e.source === "NONE" ? "no 0G decision" : e.source}</Badge>}
                 {e.latencyMs ? <span className="font-mono text-[10px] text-[#8a8d93]">{(e.latencyMs / 1000).toFixed(1)}s</span> : null}
               </div>

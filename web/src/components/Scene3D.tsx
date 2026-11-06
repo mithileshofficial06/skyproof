@@ -45,6 +45,7 @@ export interface SceneProps {
   compact?: boolean;
   focus?: [number, number, number] | null; // sim x, y, alt: cinematic close-up target
   getDrone?: () => DroneView | null; // live: read the interpolated drone every frame instead of props
+  mood?: "day" | "dusk"; // dusk: low warm sun for the cockpit view, so the drone's lights read
 }
 
 function inPoly([x, y]: XY, poly: XY[]) {
@@ -584,7 +585,7 @@ function useRadial() {
 
 const ZG_PURPLE = new THREE.Color("#7c5cff");
 
-function Drone({ drone: droneProp, fx, shared, getDrone }: { drone: DroneView; fx: SceneFx; shared: Shared; getDrone?: () => DroneView | null }) {
+function Drone({ drone: droneProp, fx, shared, getDrone, dark }: { drone: DroneView; fx: SceneFx; shared: Shared; getDrone?: () => DroneView | null; dark?: boolean }) {
   const { scene } = useGLTF("/models/drone.glb");
   const radial = useRadial();
   // The rotor meshes are authored around the model origin, so re-centre each one on its own hub
@@ -759,10 +760,10 @@ function Drone({ drone: droneProp, fx, shared, getDrone }: { drone: DroneView; f
       )}
       {fx.label && (
         <Html position={[0, 0.32, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
-          <div style={{ minWidth: 200, background: "rgba(255,253,248,0.96)", border: "1px solid #e3ded3", borderLeft: `4px solid ${tone}`, borderRadius: 8, padding: "7px 10px", fontFamily: "var(--font-geist-sans), system-ui", boxShadow: "0 8px 24px rgba(20,22,26,0.16)", backdropFilter: "blur(4px)" }}>
+          <div style={{ minWidth: 200, background: dark ? "rgba(11,16,23,0.9)" : "rgba(255,253,248,0.96)", border: dark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e3ded3", color: dark ? "#e6edf5" : undefined, borderLeft: `4px solid ${tone}`, borderRadius: 8, padding: "7px 10px", fontFamily: "var(--font-geist-sans), system-ui", boxShadow: "0 8px 24px rgba(20,22,26,0.16)", backdropFilter: "blur(4px)" }}>
             {fx.label.tag && <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#6b6f76" }}>{fx.label.tag}</div>}
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#15171a", whiteSpace: "nowrap" }}>{fx.label.title}</div>
-            {fx.label.sub && <div style={{ fontSize: 11.5, color: "#55595f", maxWidth: 260, marginTop: 2 }}>{fx.label.sub}</div>}
+            <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#ffffff" : "#15171a", whiteSpace: "nowrap" }}>{fx.label.title}</div>
+            {fx.label.sub && <div style={{ fontSize: 11.5, color: dark ? "#94a3b3" : "#55595f", maxWidth: 260, marginTop: 2 }}>{fx.label.sub}</div>}
           </div>
         </Html>
       )}
@@ -944,7 +945,8 @@ const AirportM = memo(Airport);
 const ZonesM = memo(Zones);
 const TrailM = memo(Trail);
 
-export default function Scene3D({ permit, drone, trail, people, props, fx = {}, follow = true, compact, focus, getDrone }: SceneProps) {
+export default function Scene3D({ permit, drone, trail, people, props, fx = {}, follow = true, compact, focus, getDrone, mood = "day" }: SceneProps) {
+  const dusk = mood === "dusk";
   const shared = useRef({ pos: new THREE.Vector3(...v(drone.pos[0], drone.pos[1], drone.alt)), heading: 0 });
   const [mode, setMode] = useState<CamMode>(follow ? "chase" : "city");
   const [hi, setHi] = useState(true); // drops effects and resolution if the machine can't keep up
@@ -970,11 +972,11 @@ export default function Scene3D({ permit, drone, trail, people, props, fx = {}, 
     <div className="relative h-full w-full">
       <Canvas shadows="soft" dpr={hi ? [1, 1.75] : 1} camera={{ position: [1.9, 7.5, 5.5], fov: compact ? 38 : 42, near: 0.06, far: 90 }} gl={{ antialias: true, powerPreference: "high-performance", stencil: false }}>
         <PerformanceMonitor onDecline={() => setHi(false)} />
-        <Sky sunPosition={[6, 4, 2]} turbidity={5} rayleigh={1.1} mieCoefficient={0.004} mieDirectionalG={0.85} />
-        <fog attach="fog" args={["#dde6ec", 12, 34]} />
-        <hemisphereLight args={["#eef3f8", "#8a7f6c", 0.4]} />
-        <directionalLight position={[6, 9, 4]} intensity={2.3} color="#fff4e2" castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-9} shadow-camera-right={9} shadow-camera-top={9} shadow-camera-bottom={-9} shadow-bias={-0.0002} shadow-normalBias={0.015} shadow-radius={4} />
-        <Environment resolution={256} frames={1} environmentIntensity={0.55}>
+        <Sky sunPosition={dusk ? [8, 0.55, 3] : [6, 4, 2]} turbidity={dusk ? 9 : 5} rayleigh={dusk ? 2.4 : 1.1} mieCoefficient={dusk ? 0.006 : 0.004} mieDirectionalG={0.85} />
+        <fog attach="fog" args={[dusk ? "#c9a58e" : "#dde6ec", 12, 34]} />
+        <hemisphereLight args={[dusk ? "#a9b8d6" : "#eef3f8", dusk ? "#4a3b30" : "#8a7f6c", dusk ? 0.32 : 0.4]} />
+        <directionalLight position={dusk ? [9, 4.5, 3] : [6, 9, 4]} intensity={dusk ? 2.0 : 2.3} color={dusk ? "#ffc48a" : "#fff4e2"} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-9} shadow-camera-right={9} shadow-camera-top={9} shadow-camera-bottom={-9} shadow-bias={-0.0002} shadow-normalBias={0.015} shadow-radius={4} />
+        <Environment resolution={256} frames={1} environmentIntensity={dusk ? 0.38 : 0.55}>
           <Lightformer form="rect" intensity={1.6} position={[0, 6, 0]} rotation-x={Math.PI / 2} scale={[14, 14, 1]} />
           <Lightformer form="rect" intensity={1.3} color="#ffe6c4" position={[8, 3, 4]} scale={[7, 3, 1]} target={[0, 0, 0]} />
           <Lightformer form="rect" intensity={0.8} color="#cfe2ff" position={[-8, 2, -5]} scale={[7, 3, 1]} target={[0, 0, 0]} />
@@ -990,7 +992,7 @@ export default function Scene3D({ permit, drone, trail, people, props, fx = {}, 
           ))}
           <TrailM trail={trail} permit={permit} />
           {fx.dropped && <Package pos={fx.dropped.pos} k={fx.dropped.k} />}
-          <Drone drone={drone} fx={fx} shared={shared} getDrone={getDrone} />
+          <Drone drone={drone} fx={fx} shared={shared} getDrone={getDrone} dark={dusk} />
           {fx.gust && <Gust shared={shared} />}
           {fx.beamTo && <Beam to={fx.beamTo} shared={shared} />}
         </Suspense>
