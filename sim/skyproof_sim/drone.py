@@ -133,7 +133,7 @@ class Drone:
         _, _, rgba, _, _ = p.getCameraImage(w, h, view, proj, renderer=p.ER_TINY_RENDERER, physicsClientId=self.cid)
         rgb = np.reshape(rgba, (h, w, 4))[:, :, :3].astype(np.uint8)
         buf = io.BytesIO()
-        Image.fromarray(rgb).save(buf, format="PNG")
+        Image.fromarray(rgb).save(buf, format="JPEG", quality=90)  # ~3x smaller than PNG: faster 0G round trip
         return base64.b64encode(buf.getvalue()).decode()
 
     def close(self):

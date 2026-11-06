@@ -29,7 +29,7 @@ export const PROMPT_HASH = "0x" + createHash("sha256").update(SYSTEM).digest("he
 export class ZgUnreachable extends Error {}
 
 /** `netDown` simulates a cut link: the call is not attempted and no decision exists. */
-export async function zgDecide(cmd: Cmd, state: DroneState, frameB64: string | undefined, netDown: boolean, timeoutMs = 8000): Promise<ZgDecision> {
+export async function zgDecide(cmd: Cmd, state: DroneState, frameB64: string | undefined, netDown: boolean, timeoutMs = 6000): Promise<ZgDecision> {
   if (netDown) throw new ZgUnreachable("link to 0G is down");
   const key = need("ZG_PC_API_KEY");
   const ground = cmd.type === "DROP" || cmd.type === "LAND";
@@ -37,7 +37,7 @@ export async function zgDecide(cmd: Cmd, state: DroneState, frameB64: string | u
     ? `Is there any person (a figure with a head, shirt and trousers) anywhere in this image? If yes, DENY with PEOPLE_BELOW. Command: ${JSON.stringify(cmd)}. Drone state: ${JSON.stringify(state)}.`
     : `Command: ${JSON.stringify(cmd)}. Drone state: ${JSON.stringify(state)}. Approve?`;
   const content: unknown[] = [];
-  if (frameB64) content.push({ type: "image_url", image_url: { url: `data:image/png;base64,${frameB64}` } }); // image first
+  if (frameB64) content.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${frameB64}` } }); // image first
   content.push({ type: "text", text: question });
 
   const t0 = performance.now();
@@ -105,12 +105,12 @@ export interface ZgChoice {
   promptHash: string;
 }
 
-export async function zgChoose(kind: string, detail: string, options: SituationOption[], state: DroneState, frameB64: string | undefined, netDown: boolean, timeoutMs = 8000): Promise<ZgChoice> {
+export async function zgChoose(kind: string, detail: string, options: SituationOption[], state: DroneState, frameB64: string | undefined, netDown: boolean, timeoutMs = 6000): Promise<ZgChoice> {
   if (netDown) throw new ZgUnreachable("link to 0G is down");
   const key = need("ZG_PC_API_KEY");
   const menu = options.map((o) => `- ${o.id}: ${o.label}`).join("\n");
   const content: unknown[] = [{ type: "text", text: `Situation: ${kind}. ${detail}\nDrone state: ${JSON.stringify(state)}\nOptions:\n${menu}\nChoose one option id.` }];
-  if (frameB64) content.push({ type: "image_url", image_url: { url: `data:image/png;base64,${frameB64}` } });
+  if (frameB64) content.push({ type: "image_url", image_url: { url: `data:image/jpeg;base64,${frameB64}` } });
   const t0 = performance.now();
   let res: Response;
   try {

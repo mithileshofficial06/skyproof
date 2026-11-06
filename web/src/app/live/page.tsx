@@ -87,7 +87,7 @@ export default function Live() {
           case "decision": {
             const cmd = m.request.cmd;
             push({ kind: "decision", title: `${cmd.type} → ${m.verdict}${m.code && m.code !== "OK" ? ` ${m.code}` : ""}`, detail: m.reason, status: m.verdict === "ALLOW" ? "ok" : m.verdict === "DENY" ? "deny" : "warn", source: m.source, zgRequestId: m.zgRequestId });
-            if (m.frame) setFrame({ src: `data:image/png;base64,${m.frame}`, label: `${cmd.type} · ${m.verdict}` });
+            if (m.frame) setFrame({ src: `data:image/jpeg;base64,${m.frame}`, label: `${cmd.type} · ${m.verdict}` });
             break;
           }
           case "choice": {
@@ -97,7 +97,7 @@ export default function Live() {
               kind: "situation", title: `${TITLES[sit.kind] ?? sit.kind} → ${m.choice ?? "no decision"}`, detail: m.reason, status: m.choice ? "ok" : "warn", source: m.source, zgRequestId: m.zgRequestId,
               options: sit.options.map((o: { id: string; label: string }) => ({ id: o.id, label: o.label, vetoed: vetoed[o.id], chosen: o.id === m.choice })),
             });
-            if (m.frame) setFrame({ src: `data:image/png;base64,${m.frame}`, label: `${sit.kind} · ${m.choice ?? "no decision"}` });
+            if (m.frame) setFrame({ src: `data:image/jpeg;base64,${m.frame}`, label: `${sit.kind} · ${m.choice ?? "no decision"}` });
             break;
           }
           case "action":

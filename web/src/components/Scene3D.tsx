@@ -717,7 +717,14 @@ function Trail({ trail, permit }: { trail: { pos: XY; alt: number }[]; permit: P
 // Camera: starts wide, flies in, then follows behind and slightly to the side of the drone.
 function CameraRig({ shared, follow, focus }: { shared: Shared; follow: boolean; focus?: [number, number, number] | null }) {
   const look = useRef(new THREE.Vector3(1.9, 0, -1.8));
-  useFrame((state, dt) => {
+  const camHeading = useRef(0);
+  const damp = (cur: THREE.Vector3, to: THREE.Vector3, lambda: number, dt: number) => {
+    cur.x = THREE.MathUtils.damp(cur.x, to.x, lambda, dt);
+    cur.y = THREE.MathUtils.damp(cur.y, to.y, lambda, dt);
+    cur.z = THREE.MathUtils.damp(cur.z, to.z, lambda, dt);
+  };
+  useFrame((state, rawDt) => {
+    const dt = Math.min(rawDt, 0.05); // no jumps after a slow frame
     if (focus) {
       // close-up on what is about to happen, seen from the drone's side
       const f = new THREE.Vector3(...v(focus[0], focus[1], focus[2]));
@@ -725,20 +732,24 @@ function CameraRig({ shared, follow, focus }: { shared: Shared; follow: boolean;
       if (d.lengthSq() < 0.01) d.set(-1, 0, 1);
       d.normalize();
       const desired = f.clone().addScaledVector(d, 2.3).add(new THREE.Vector3(0.6, 1.3, 0.4));
-      state.camera.position.lerp(desired, Math.min(1, dt * 1.8));
-      look.current.lerp(f, Math.min(1, dt * 3));
+      damp(state.camera.position, desired, 1.1, dt);
+      damp(look.current, f, 1.6, dt);
       state.camera.lookAt(look.current);
       return;
     }
     if (!follow) return;
     const p = shared.current.pos;
-    const h = shared.current.heading;
+    // the camera turns slowly towards the drone's heading (shortest way round)
+    let dh = shared.current.heading - camHeading.current;
+    dh = Math.atan2(Math.sin(dh), Math.cos(dh));
+    camHeading.current += dh * (1 - Math.exp(-0.7 * dt));
+    const h = camHeading.current;
     const back = new THREE.Vector3(-Math.cos(h), 0, Math.sin(h));
     const side = new THREE.Vector3(Math.sin(h), 0, Math.cos(h));
     const desired = p.clone().addScaledVector(back, 1.25).addScaledVector(side, 0.45).add(new THREE.Vector3(0, 0.62, 0));
     desired.y = Math.max(desired.y, 0.35);
-    state.camera.position.lerp(desired, Math.min(1, dt * 1.6));
-    look.current.lerp(p.clone().addScaledVector(back, -0.35), Math.min(1, dt * 3));
+    damp(state.camera.position, desired, 1.3, dt);
+    damp(look.current, p.clone().addScaledVector(back, -0.35), 2.2, dt);
     state.camera.lookAt(look.current);
   });
   return null;

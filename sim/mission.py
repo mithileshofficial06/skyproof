@@ -35,7 +35,8 @@ from skyproof_sim.world import World, load_permit
 CRUISE = 1.0
 APPROACH_ALT = 0.55
 CLIMB_ALT = 1.4
-DECISION_TIMEOUT_S = 9.0      # one 0G call (officer times out at 8 s)
+DECISION_TIMEOUT_S = 7.0      # one 0G call (officer times out at 6 s)
+PREFETCH_DIST = 0.55          # ask 0G about the next move this far before the end of the leg
 RETRY_WINDOW_S = 15.0         # keep trying this long (sim seconds) without an ALLOW, then safe-stop
 RETRY_PAUSE_S = 3.0
 TELEMETRY_EVERY = CTRL_HZ // 2  # 2 Hz
@@ -99,6 +100,7 @@ class FlightComputer:
         self.waited: set = set()      # situations where WAIT/HOLD was already used once
         self.rest: list = []          # remaining mission waypoints after the current leg
         self.gust_until = None
+        self.prefetched: dict = {}  # cmd key -> (nonce, req_hash, sent, reply or None)
         self.props: list[dict] = []
         self.drone.set_wind(3.0)
 
@@ -125,18 +127,25 @@ class FlightComputer:
 
     def _wait_reply(self, msg_type, nonce):
         sent = time.time()
+        for i, m in enumerate(self.link.inbox):
+            if m.get("type") == msg_type and m.get("nonce") == nonce:
+                self.link.inbox.pop(i)
+                return sent, m
         while time.time() - sent < DECISION_TIMEOUT_S:
             self.drone.step()  # keep hovering while 0G thinks: the autopilot never waits
             self.tick()
             for m in self.link.poll(0.005):
                 if m.get("type") == msg_type and m.get("nonce") == nonce:
                     return sent, m
+                self.link.inbox.append(m)
         return sent, None
 
     # ---- guarded flight: sensing, reflex brake, situations ------------------
-    def fly(self, xy, alt, depth=0):
-        """Fly to (xy, alt). If something happens on the way, stop and let 0G decide."""
+    def fly(self, xy, alt, depth=0, then=None):
+        """Fly to (xy, alt). If something happens on the way, stop and let 0G decide.
+        `then` = (cmd, look_at): the next mission command, asked of 0G before we arrive."""
         goal = np.array([xy[0], xy[1], alt], dtype=float)
+        self._then = then
         for _ in range(8):
             event = self._leg(goal)
             if event is None:
@@ -159,6 +168,7 @@ class FlightComputer:
                 ev = self.sense(goal)
                 if ev:
                     return self.brake(ev)
+                self.maybe_prefetch(goal)
         self.drone.target = goal
         t0 = self.drone.t
         while np.linalg.norm(self.drone.pos - goal) > 0.08 and self.drone.t - t0 < 20:
@@ -307,17 +317,58 @@ class FlightComputer:
         home, corner = self.permit["rallyPoints"]["HOME"], self.permit["rallyPoints"]["R2"]
         return [home] if self.drone.pos[0] < 1.4 else [corner, home]
 
-    # ---- mission commands (ALLOW / DENY) ------------------------------------
-    def ask(self, cmd: dict, look_at=None) -> tuple[str, str, float, dict | None]:
+    # ---- asking ahead -------------------------------------------------------
+    @staticmethod
+    def cmd_key(cmd):
+        return (cmd["type"], tuple(round(float(c), 2) for c in cmd["to"]), round(float(cmd["alt"]), 2))
+
+    def send_request(self, cmd, look_at=None):
         people = None
         if cmd["type"] in ("DROP", "LAND"):
             radius = SPOT_RADIUS if self.scenario in ("full", "blocked") else 0.4
             people = self.world.people_within(cmd["to"], radius)
         nonce, body, req_hash = make_request(cmd, self.drone.state(), people)
+        if look_at is None and cmd["type"] == "REROUTE":
+            look_at = [*cmd["to"][:2], cmd["alt"]]  # show 0G the way ahead
         frame = self.drone.camera_png_b64(look_at_xy=look_at) if look_at is not None else None
         self.link.send({"type": "request", "body": body, "frame": frame})
+        return nonce, req_hash, time.time()
+
+    def maybe_prefetch(self, goal):
+        then = getattr(self, "_then", None)
+        if not then:
+            return
+        cmd, look_at = then
+        key = self.cmd_key(cmd)
+        if key in self.prefetched or np.linalg.norm(goal - self.drone.pos) > PREFETCH_DIST:
+            return
+        self.prefetched[key] = list(self.send_request(cmd, look_at)) + [None]
+        self._then = None
+
+    # ---- mission commands (ALLOW / DENY) ------------------------------------
+    def ask(self, cmd: dict, look_at=None) -> tuple[str, str, float, dict | None]:
+        pre = self.prefetched.pop(self.cmd_key(cmd), None)
+        self.early = bool(pre)
+        if pre:
+            nonce, req_hash, sent, reply = pre
+            if reply is None:
+                self.collect_prefetched_one(nonce, pre)
+                reply = pre[3]
+            if reply is None:
+                _, reply = self._wait_reply("decision", nonce)
+            return nonce, req_hash, sent, reply
+        nonce, req_hash, _ = self.send_request(cmd, look_at)
         sent, decision = self._wait_reply("decision", nonce)
         return nonce, req_hash, sent, decision
+
+    def collect_prefetched_one(self, nonce, pre):
+        keep = []
+        for m in self.link.poll(0.0):
+            if m.get("type") == "decision" and m.get("nonce") == nonce:
+                pre[3] = m
+            else:
+                keep.append(m)
+        self.link.inbox = keep
 
     def command(self, cmd: dict, look_at=None, max_people_denials=None) -> dict | None:
         """Get an ALLOW for `cmd` or safe-stop. Returns the approving decision.
@@ -328,7 +379,7 @@ class FlightComputer:
             nonce, req_hash, sent, d = self.ask(cmd, look_at)
             ok, why = self.gate.permits(nonce, req_hash, sent, d)
             src = f"[{d['source']}] {d.get('zgRequestId') or ''}" if d else ""
-            self.say(f"{cmd['type']:7s} -> {why:24s} {src} {d['reason'] if d else ''}")
+            self.say(f"{cmd['type']:7s} -> {why:24s} {'(asked early) ' if self.early else ''}{src} {d['reason'] if d else ''}")
             if ok:
                 self.link.send({"type": "action", "cmd": cmd, "decisionHash": d["decisionHash"], "state": self.drone.state()})
                 return d
@@ -341,6 +392,8 @@ class FlightComputer:
                     return None
             if self.drone.t - start > RETRY_WINDOW_S:
                 raise SafeStopped(f"no ALLOW for {cmd['type']} within {RETRY_WINDOW_S:.0f} s")
+            if why == "decision is stale":
+                continue  # an early answer that got too old: ask again straight away
             self.hover(RETRY_PAUSE_S)
 
     def on_people_denied(self):
@@ -460,8 +513,9 @@ class FlightComputer:
             self.fly_unguarded(home, CRUISE)
             self.command({"type": "REROUTE", "from": home, "to": corner, "alt": CRUISE})
             self.rest = [[*approach, APPROACH_ALT]]
-            self.fly(corner, CRUISE)
-            self.command({"type": "REROUTE", "from": r3(self.drone.pos[:2]), "to": approach, "alt": APPROACH_ALT})
+            nxt = {"type": "REROUTE", "from": list(corner), "to": approach, "alt": APPROACH_ALT}
+            self.fly(corner, CRUISE, then=(nxt, None))
+            self.command(nxt)
             self.rest = []
             self.fly(approach, APPROACH_ALT)
 
@@ -495,7 +549,8 @@ class FlightComputer:
             for i, wp in enumerate(legs):
                 self.command({"type": "REROUTE", "from": r3(self.drone.pos[:2]), "to": wp, "alt": CRUISE})
                 self.rest = [[*w, CRUISE] for w in legs[i + 1:]]
-                self.fly(wp, CRUISE)
+                nxt = {"type": "REROUTE", "from": list(wp), "to": legs[i + 1], "alt": CRUISE} if i + 1 < len(legs) else {"type": "LAND", "from": list(wp), "to": list(home), "alt": 0.0}
+                self.fly(wp, CRUISE, then=(nxt, list(home) if nxt["type"] == "LAND" else None))
             self.rest = []
             self.land_at(home, "HOME")
         except ReturnHome:
