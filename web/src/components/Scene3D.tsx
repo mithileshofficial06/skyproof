@@ -2,7 +2,7 @@
 // The 3D simulation view. World rebuilt from the signed permit + recorded scene, in daylight.
 // Sim coordinates: metres on a 1:50 city block (x east, y north, alt up) -> three.js (x, alt, -y).
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Edges, Environment, Html, Lightformer, Line, OrbitControls, PerformanceMonitor, Sky, Text as DreiText, useGLTF } from "@react-three/drei";
+import { Edges, Environment, Lightformer, Line, OrbitControls, PerformanceMonitor, Sky, Text as DreiText, useGLTF } from "@react-three/drei";
 import { Bloom, EffectComposer, SMAA, ToneMapping, Vignette } from "@react-three/postprocessing";
 import { ToneMappingMode } from "postprocessing";
 import { type ComponentProps, memo, type MutableRefObject, Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -585,7 +585,7 @@ function useRadial() {
 
 const ZG_PURPLE = new THREE.Color("#7c5cff");
 
-function Drone({ drone: droneProp, fx, shared, getDrone, dark }: { drone: DroneView; fx: SceneFx; shared: Shared; getDrone?: () => DroneView | null; dark?: boolean }) {
+function Drone({ drone: droneProp, fx, shared, getDrone }: { drone: DroneView; fx: SceneFx; shared: Shared; getDrone?: () => DroneView | null }) {
   const { scene } = useGLTF("/models/drone.glb");
   const radial = useRadial();
   // The rotor meshes are authored around the model origin, so re-centre each one on its own hub
@@ -757,15 +757,6 @@ function Drone({ drone: droneProp, fx, shared, getDrone, dark }: { drone: DroneV
           <ringGeometry args={[0.24, 0.27, 40]} />
           <meshBasicMaterial color="#b45309" />
         </mesh>
-      )}
-      {fx.label && (
-        <Html position={[0, 0.32, 0]} center zIndexRange={[20, 0]} style={{ pointerEvents: "none" }}>
-          <div style={{ minWidth: 200, background: dark ? "rgba(11,16,23,0.9)" : "rgba(255,253,248,0.96)", border: dark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e3ded3", color: dark ? "#e6edf5" : undefined, borderLeft: `4px solid ${tone}`, borderRadius: 8, padding: "7px 10px", fontFamily: "var(--font-geist-sans), system-ui", boxShadow: "0 8px 24px rgba(20,22,26,0.16)", backdropFilter: "blur(4px)" }}>
-            {fx.label.tag && <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#6b6f76" }}>{fx.label.tag}</div>}
-            <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#ffffff" : "#15171a", whiteSpace: "nowrap" }}>{fx.label.title}</div>
-            {fx.label.sub && <div style={{ fontSize: 11.5, color: dark ? "#94a3b3" : "#55595f", maxWidth: 260, marginTop: 2 }}>{fx.label.sub}</div>}
-          </div>
-        </Html>
       )}
     </group>
   );
@@ -945,8 +936,26 @@ const AirportM = memo(Airport);
 const ZonesM = memo(Zones);
 const TrailM = memo(Trail);
 
+/** Keeps the HTML label pinned above the drone by projecting its position each frame. */
+function LabelTracker({ shared, el }: { shared: Shared; el: MutableRefObject<HTMLDivElement | null> }) {
+  const p = useMemo(() => new THREE.Vector3(), []);
+  useFrame(({ camera, size }) => {
+    const d = el.current;
+    if (!d) return;
+    p.copy(shared.current.pos).add(LABEL_LIFT).project(camera);
+    if (p.z > 1) return void (d.style.visibility = "hidden");
+    d.style.visibility = "visible";
+    d.style.transform = `translate(${((p.x + 1) / 2) * size.width}px, ${((1 - p.y) / 2) * size.height}px) translate(-50%, -100%)`;
+  });
+  return null;
+}
+const LABEL_LIFT = new THREE.Vector3(0, 0.32, 0);
+
 export default function Scene3D({ permit, drone, trail, people, props, fx = {}, follow = true, compact, focus, getDrone, mood = "day" }: SceneProps) {
   const dusk = mood === "dusk";
+  const dark = dusk;
+  const tone = TONE[drone.status];
+  const labelEl = useRef<HTMLDivElement>(null);
   const shared = useRef({ pos: new THREE.Vector3(...v(drone.pos[0], drone.pos[1], drone.alt)), heading: 0 });
   const [mode, setMode] = useState<CamMode>(follow ? "chase" : "city");
   const [hi, setHi] = useState(true); // drops effects and resolution if the machine can't keep up
@@ -969,7 +978,7 @@ export default function Scene3D({ permit, drone, trail, people, props, fx = {}, 
   const free = !focus && (mode === "orbit" || mode === "city");
 
   return (
-    <div className="relative h-full w-full">
+    <div className="relative h-full w-full overflow-hidden">
       <Canvas shadows="soft" dpr={hi ? [1, 1.75] : 1} camera={{ position: [1.9, 7.5, 5.5], fov: compact ? 38 : 42, near: 0.06, far: 90 }} gl={{ antialias: true, powerPreference: "high-performance", stencil: false }}>
         <PerformanceMonitor onDecline={() => setHi(false)} />
         <Sky sunPosition={dusk ? [8, 0.55, 3] : [6, 4, 2]} turbidity={dusk ? 9 : 5} rayleigh={dusk ? 2.4 : 1.1} mieCoefficient={dusk ? 0.006 : 0.004} mieDirectionalG={0.85} />
@@ -992,7 +1001,7 @@ export default function Scene3D({ permit, drone, trail, people, props, fx = {}, 
           ))}
           <TrailM trail={trail} permit={permit} />
           {fx.dropped && <Package pos={fx.dropped.pos} k={fx.dropped.k} />}
-          <Drone drone={drone} fx={fx} shared={shared} getDrone={getDrone} dark={dusk} />
+          <Drone drone={drone} fx={fx} shared={shared}  getDrone={getDrone} />
           {fx.gust && <Gust shared={shared} />}
           {fx.beamTo && <Beam to={fx.beamTo} shared={shared} />}
         </Suspense>
@@ -1006,7 +1015,17 @@ export default function Scene3D({ permit, drone, trail, people, props, fx = {}, 
             <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
           </EffectComposer>
         )}
+        <LabelTracker shared={shared} el={labelEl} />
       </Canvas>
+      <div ref={labelEl} className="pointer-events-none absolute left-0 top-0 z-20" style={{ visibility: "hidden" }}>
+        {fx.label && (
+            <div style={{ minWidth: 200, background: dark ? "rgba(11,16,23,0.9)" : "rgba(255,253,248,0.96)", border: dark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #e3ded3", color: dark ? "#e6edf5" : undefined, borderLeft: `4px solid ${tone}`, borderRadius: 8, padding: "7px 10px", fontFamily: "var(--font-geist-sans), system-ui", boxShadow: "0 8px 24px rgba(20,22,26,0.16)", backdropFilter: "blur(4px)" }}>
+              {fx.label.tag && <div style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#6b6f76" }}>{fx.label.tag}</div>}
+              <div style={{ fontSize: 14, fontWeight: 600, color: dark ? "#ffffff" : "#15171a", whiteSpace: "nowrap" }}>{fx.label.title}</div>
+              {fx.label.sub && <div style={{ fontSize: 11.5, color: dark ? "#94a3b3" : "#55595f", maxWidth: 260, marginTop: 2 }}>{fx.label.sub}</div>}
+            </div>
+          )}
+      </div>
       {!compact && (
         <div className="absolute bottom-3 right-3 flex items-center gap-2">
           {free && <span className="rounded-md bg-[#15171a]/70 px-2 py-1 text-[11px] text-[#f4f1ea]">drag to look around · scroll to zoom</span>}
