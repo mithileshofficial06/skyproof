@@ -1,7 +1,9 @@
 // Officer service: the drone's flight computer asks here before every mission command.
 // Order: permit + hard rules -> simulated person detector -> 0G vision decision -> combine -> record.
 // If 0G can't be reached the answer is NO_DECISION. A decision is never made up.
+import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import { WebSocketServer, type WebSocket } from "ws";
 import { ethers } from "ethers";
 import { need } from "./env.js";
@@ -25,6 +27,7 @@ interface Session {
   netDown: boolean;
   samples: DroneState[];
   lastBatch: number;
+  lastKept: number;
 }
 
 function log(...a: unknown[]) {
@@ -78,7 +81,7 @@ async function decide(s: Session, msg: any) {
     zg: zg && { requestId: zg.zgRequestId, provider: zg.provider, model: zg.model, latencyMs: zg.latencyMs, promptHash: PROMPT_HASH },
   });
   log(`${cmd.type.padEnd(7)} -> ${verdict.padEnd(11)} ${code.padEnd(14)} [${source}] ${zg?.zgRequestId ?? ""} ${zg ? zg.latencyMs + "ms" : ""} ${reason}`);
-  return { type: "decision", nonce: req.nonce, requestHash, verdict, code, reason, source, decisionHash: record.hash, zgRequestId: zg?.zgRequestId ?? null };
+  return { type: "decision", nonce: req.nonce, requestHash, verdict, code, reason, source, decisionHash: record.hash, zgRequestId: zg?.zgRequestId ?? null, recordSeq: record.seq, latencyMs: zg?.latencyMs ?? null };
 }
 
 async function choose(s: Session, msg: any) {
@@ -126,7 +129,7 @@ async function choose(s: Session, msg: any) {
     zg: zg && { requestId: zg.zgRequestId, provider: zg.provider, model: zg.model, latencyMs: zg.latencyMs, promptHash: zg.promptHash },
   });
   log(`${situation.kind.padEnd(17)} -> ${(choice ?? verdict).padEnd(12)} [${source}] ${zg?.zgRequestId ?? ""} ${zg ? zg.latencyMs + "ms" : ""} ${reason}${vetoed.length ? `  (vetoed: ${vetoed.map((v) => v.id).join(", ")})` : ""}`);
-  return { type: "choice", nonce: req.nonce, requestHash, verdict, choice, code: choice ?? "NO_DECISION", reason, source, vetoed, legal: legal.map((o) => o.id), decisionHash: record.hash, zgRequestId: zg?.zgRequestId ?? null };
+  return { type: "choice", nonce: req.nonce, requestHash, verdict, choice, code: choice ?? "NO_DECISION", reason, source, vetoed, legal: legal.map((o) => o.id), decisionHash: record.hash, zgRequestId: zg?.zgRequestId ?? null , recordSeq: record.seq, latencyMs: zg?.latencyMs ?? null };
 }
 
 // Live watchers (the web mission console). They see everything the recorder sees.
@@ -158,9 +161,13 @@ wss.on("connection", (ws: WebSocket) => {
       switch (msg.type) {
         case "hello": {
           const flightId = `${permit.airframeId}-${msg.scenario}-${Date.now()}`;
-          s = { rec: new FlightRecorder(flightId, signer), sealer: null, netDown: false, samples: [], lastBatch: Date.now() };
+          s = { rec: new FlightRecorder(flightId, signer), sealer: null, netDown: false, samples: [], lastBatch: Date.now(), lastKept: -1 };
           s.rec.append("PERMIT", { permitHash, permit, signer: signer.address, visionModel: process.env.ZG_VISION_MODEL, promptHash: PROMPT_HASH, situationPromptHash: SITUATION_PROMPT_HASH, scenario: msg.scenario });
-          if (ONCHAIN) s.sealer = new FlightSealer(s.rec, permit.airframeId, permitHash, log);
+          if (ONCHAIN) {
+            s.sealer = new FlightSealer(s.rec, permit.airframeId, permitHash, log);
+            s.sealer.onOpen = (openTx) => broadcast({ type: "opened", flightId, openTx });
+            s.sealer.onSeal = (seg) => broadcast({ type: "sealed", flightId, ...seg });
+          }
           lastSession = s;
           broadcast({ type: "flight", flightId, scenario: msg.scenario, permitHash, chainFlightId: s.sealer?.manifest.chainFlightId ?? null });
           log(`flight ${flightId} opened (record signer ${signer.address})`);
@@ -189,7 +196,10 @@ wss.on("connection", (ws: WebSocket) => {
           break;
         case "telemetry":
           broadcast({ type: "telemetry", state: msg.state });
-          s!.samples.push(msg.state);
+          if (msg.state.t - s!.lastKept >= 0.45) {
+            s!.samples.push(msg.state); // the black box keeps ~2 Hz; the live view gets every sample
+            s!.lastKept = msg.state.t;
+          }
           if (Date.now() - s!.lastBatch >= STATE_BATCH_MS) flushState(s!);
           break;
         case "action":
@@ -220,7 +230,15 @@ wss.on("connection", (ws: WebSocket) => {
           log(`flight closed: ${s!.rec.seq} records, head ${s!.rec.head}\n         file ${s!.rec.file}`);
           ws.send(JSON.stringify({ type: "closed", records: s!.rec.seq, head: s!.rec.head, file: s!.rec.file, sealing: !!s!.sealer }));
           broadcast({ type: "closed", flightId: s!.rec.flightId, records: s!.rec.seq, chainFlightId: s!.sealer?.manifest.chainFlightId ?? null });
-          s!.sealer?.finish();
+          s!.sealer?.finish().then((m) => {
+            if (!m.closed) return;
+            // publish the sealed flight to the website (rebuilt from 0G, like the replay)
+            const p = spawn(process.execPath, ["node_modules/tsx/dist/cli.mjs", "src/export-web.ts"], { cwd: fileURLToPath(new URL("..", import.meta.url)) });
+            p.on("exit", (code) => {
+              log(code === 0 ? `website: flight ${m.flightId} published` : `website export failed (code ${code})`);
+              if (code === 0) broadcast({ type: "published", flightId: m.flightId });
+            });
+          });
           break;
       }
     } catch (e) {

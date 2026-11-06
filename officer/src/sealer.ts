@@ -70,6 +70,8 @@ export class FlightSealer {
   private opened: Promise<void>;
   private failed = false;
   private finalRequested = false;
+  onOpen?: (openTx: string) => void;
+  onSeal?: (seg: { fromSeq: number; toSeq: number; anchorTx: string; storageTx: string; rootHash: string; final: boolean }) => void;
 
   constructor(private rec: FlightRecorder, airframeId: string, permitHash: string, private log: Log) {
     const { log: flightLog } = contracts(this.wallet);
@@ -103,6 +105,7 @@ export class FlightSealer {
         await tx.wait();
         this.manifest.openTx = tx.hash;
         this.save();
+        this.onOpen?.(tx.hash);
         log(`0G Chain: flight opened ${this.manifest.chainFlightId.slice(0, 18)}… tx ${tx.hash}`);
       })
     ).catch((e) => {
@@ -151,6 +154,7 @@ export class FlightSealer {
           this.manifest.closed = true;
           this.manifest.closeTx = anchorTx;
         }
+        this.onSeal?.({ fromSeq, toSeq, anchorTx, storageTx: up.txHash, rootHash: up.rootHash, final });
         this.save();
         this.log(`0G sealed seg ${index}: records ${fromSeq}-${toSeq} (${blob.length} B) root ${up.rootHash.slice(0, 14)}… ${final ? "closeFlight" : "anchor"} tx ${anchorTx.slice(0, 14)}… in ${Date.now() - t0} ms`);
       }

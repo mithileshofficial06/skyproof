@@ -41,6 +41,7 @@ export interface SceneProps {
   follow?: boolean;
   compact?: boolean;
   focus?: [number, number, number] | null; // sim x, y, alt: cinematic close-up target
+  getDrone?: () => DroneView | null; // live: read the interpolated drone every frame instead of props
 }
 
 function inPoly([x, y]: XY, poly: XY[]) {
@@ -529,7 +530,7 @@ function Tree({ xy, i }: { xy: XY; i: number }) {
 
 type Shared = MutableRefObject<{ pos: THREE.Vector3; heading: number }>;
 
-function Drone({ drone, fx, shared }: { drone: DroneView; fx: SceneFx; shared: Shared }) {
+function Drone({ drone: droneProp, fx, shared, getDrone }: { drone: DroneView; fx: SceneFx; shared: Shared; getDrone?: () => DroneView | null }) {
   const { scene } = useGLTF("/models/drone.glb");
   // The rotor meshes are authored around the model origin, so re-centre each one on its own hub
   // (fresh geometry copy) so it spins in place instead of orbiting the body.
@@ -572,11 +573,13 @@ function Drone({ drone, fx, shared }: { drone: DroneView; fx: SceneFx; shared: S
 
   useFrame((state, dt) => {
     if (!g.current || !body.current) return;
+    const drone = getDrone?.() ?? droneProp;
     tgt.current.set(...v(drone.pos[0], drone.pos[1], drone.alt));
-    g.current.position.lerp(tgt.current, Math.min(1, dt * 10));
+    if (getDrone) g.current.position.copy(tgt.current); // already interpolated
+    else g.current.position.lerp(tgt.current, Math.min(1, dt * 10));
     const [vx, vy] = drone.vel;
     const speed = Math.hypot(vx, vy);
-    if (speed > 0.06) shared.current.heading = Math.atan2(vy, vx);
+    if (speed > 0.12) shared.current.heading = Math.atan2(vy, vx); // ignore hover jitter
     // turn the shortest way round, bank into turns, pitch with speed
     let dh = shared.current.heading - g.current.rotation.y;
     dh = Math.atan2(Math.sin(dh), Math.cos(dh));
@@ -596,7 +599,7 @@ function Drone({ drone, fx, shared }: { drone: DroneView; fx: SceneFx; shared: S
     }
   });
 
-  const tone = TONE[drone.status];
+  const tone = TONE[droneProp.status];
   return (
     <group ref={g}>
       <group ref={body}>
@@ -759,7 +762,7 @@ const CityM = memo(City);
 const AirportM = memo(Airport);
 const ZonesM = memo(Zones);
 
-export default function Scene3D({ permit, drone, trail, people, props, fx = {}, follow = true, compact, focus }: SceneProps) {
+export default function Scene3D({ permit, drone, trail, people, props, fx = {}, follow = true, compact, focus, getDrone }: SceneProps) {
   const shared = useRef({ pos: new THREE.Vector3(...v(drone.pos[0], drone.pos[1], drone.alt)), heading: 0 });
   return (
     <Canvas shadows dpr={[1, 2]} camera={{ position: [1.9, 7.5, 5.5], fov: compact ? 38 : 42, near: 0.05, far: 60 }} gl={{ antialias: true, logarithmicDepthBuffer: true }}>
@@ -777,7 +780,7 @@ export default function Scene3D({ permit, drone, trail, people, props, fx = {}, 
         ))}
         <Trail trail={trail} permit={permit} />
         {fx.dropped && <Package pos={fx.dropped.pos} k={fx.dropped.k} />}
-        <Drone drone={drone} fx={fx} shared={shared} />
+        <Drone drone={drone} fx={fx} shared={shared} getDrone={getDrone} />
         {fx.gust && <Gust shared={shared} />}
         {fx.beamTo && <Beam to={fx.beamTo} shared={shared} />}
       </Suspense>

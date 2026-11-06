@@ -29,7 +29,7 @@ export const PROMPT_HASH = "0x" + createHash("sha256").update(SYSTEM).digest("he
 export class ZgUnreachable extends Error {}
 
 /** `netDown` simulates a cut link: the call is not attempted and no decision exists. */
-export async function zgDecide(cmd: Cmd, state: DroneState, frameB64: string | undefined, netDown: boolean, timeoutMs = 6000): Promise<ZgDecision> {
+export async function zgDecide(cmd: Cmd, state: DroneState, frameB64: string | undefined, netDown: boolean, timeoutMs = 8000): Promise<ZgDecision> {
   if (netDown) throw new ZgUnreachable("link to 0G is down");
   const key = need("ZG_PC_API_KEY");
   const ground = cmd.type === "DROP" || cmd.type === "LAND";
@@ -105,7 +105,7 @@ export interface ZgChoice {
   promptHash: string;
 }
 
-export async function zgChoose(kind: string, detail: string, options: SituationOption[], state: DroneState, frameB64: string | undefined, netDown: boolean, timeoutMs = 6000): Promise<ZgChoice> {
+export async function zgChoose(kind: string, detail: string, options: SituationOption[], state: DroneState, frameB64: string | undefined, netDown: boolean, timeoutMs = 8000): Promise<ZgChoice> {
   if (netDown) throw new ZgUnreachable("link to 0G is down");
   const key = need("ZG_PC_API_KEY");
   const menu = options.map((o) => `- ${o.id}: ${o.label}`).join("\n");

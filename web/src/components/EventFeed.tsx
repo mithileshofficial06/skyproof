@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
-import type { FlightEvent } from "@/lib/flight";
+import { ZG_EXPLORER, type FlightEvent } from "@/lib/flight";
 import { Badge, cx, sourceTone } from "./ui";
 
 const BAR: Record<FlightEvent["status"], string> = { ok: "bg-[#0f766e]", deny: "bg-[#b91c1c]", warn: "bg-[#b45309]", info: "bg-[#94a3b8]", breach: "bg-[#b91c1c]" };
@@ -17,7 +17,7 @@ export function EventFeed({ events, now, onSeek }: { events: FlightEvent[]; now:
       {visible.map((e, i) => {
         const latest = i === visible.length - 1;
         return (
-          <button key={`${e.seq}-${e.kind}`} onClick={() => onSeek?.(e.t)} className={cx("relative flex w-full gap-3 py-3 pl-3 pr-2 text-left transition-colors hover:bg-[#f6f3ec]", latest && "bg-[#f6f3ec]")}>
+          <div role="button" tabIndex={0} key={`${e.seq}-${e.kind}`} onClick={() => onSeek?.(e.t)} className={cx("relative flex w-full cursor-pointer gap-3 py-3 pl-3 pr-2 text-left transition-colors hover:bg-[#f6f3ec]", latest && "bg-[#f6f3ec]")}>
             <span className={cx("absolute left-0 top-3 bottom-3 w-[3px] rounded", BAR[e.status])} />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">
@@ -37,11 +37,30 @@ export function EventFeed({ events, now, onSeek }: { events: FlightEvent[]; now:
               )}
               <div className="mt-1 flex items-center gap-3 font-mono text-[10px] text-[#8a8d93]">
                 <span>t+{e.t.toFixed(1)}s</span>
-                <span>#{e.seq}</span>
-                {e.zgRequestId && <span className="truncate">0G {e.zgRequestId.slice(0, 18)}…</span>}
+                <span>#{e.recordSeq ?? e.seq}</span>
               </div>
+              {(e.kind === "decision" || e.kind === "situation") && (
+                <div className="mt-1 space-y-0.5 font-mono text-[10px] leading-snug">
+                  {e.zgRequestId && (
+                    <div className="flex gap-1.5 text-[#55595f]">
+                      <span className="w-[52px] shrink-0 text-[#8a8d93]">0G req</span>
+                      <span className="select-all break-all">{e.zgRequestId}</span>
+                    </div>
+                  )}
+                  <div className="flex gap-1.5">
+                    <span className="w-[52px] shrink-0 text-[#8a8d93]">0G tx</span>
+                    {e.anchorTx ? (
+                      <a href={`${ZG_EXPLORER}/tx/${e.anchorTx}`} target="_blank" rel="noreferrer" onClick={(ev) => ev.stopPropagation()} className="break-all text-[#3b2fa8] underline decoration-[#cfc8ba] hover:text-[#15171a]">
+                        {e.anchorTx}
+                      </a>
+                    ) : (
+                      <span className="text-[#b45309]">sealing on 0G Chain…</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          </button>
+          </div>
         );
       })}
     </div>

@@ -85,6 +85,8 @@ export interface FlightEvent {
   options?: { id: string; label: string; vetoed?: string; chosen?: boolean }[];
   latencyMs?: number;
   hash: string;
+  recordSeq?: number;
+  anchorTx?: string; // 0G Chain tx that sealed the record holding this event
 }
 
 export interface Person {
@@ -236,6 +238,10 @@ export function buildTimeline(f: FlightFile): Timeline {
   }
   events.sort((a, b) => a.t - b.t || a.seq - b.seq);
   const duration = Math.max(dedup[dedup.length - 1]?.t ?? 0, events[events.length - 1]?.t ?? 0) + 1;
+  for (const e of events) {
+    const seg = f.segments.find((g) => e.seq >= g.fromSeq && e.seq <= g.toSeq);
+    if (seg) e.anchorTx = seg.anchorTx;
+  }
   return { permit, samples: dedup, events, scenes, duration, breachSeqs };
 }
 

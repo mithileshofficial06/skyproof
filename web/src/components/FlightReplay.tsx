@@ -5,6 +5,7 @@ import { ARC_EXPLORER, buildTimeline, type FlightFile, sampleAt, sceneAt, ZG_EXP
 import { buildBeats, type Beat } from "@/lib/beats";
 import { deriveFx } from "@/lib/fx";
 import { EventFeed } from "./EventFeed";
+import ProofCheck from "./ProofCheck";
 import { Badge, cx, HashLink, Panel, Stat } from "./ui";
 
 const Scene3D = dynamic(() => import("./Scene3D"), { ssr: false, loading: () => <div className="grid h-full place-items-center bg-[#dfe7ec] text-sm text-[#55595f]">Loading the city…</div> });
@@ -186,6 +187,7 @@ export default function FlightReplay({ flight, autoplay = true, compact = false 
             ))}
           </div>
         </div>
+        <ProofCheck flight={flight} />
         <ProofPanels flight={flight} />
       </div>
       <Panel title="Everything the drone did" right={<span className="font-mono text-[11px] text-[#8a8d93]">{tl.events.filter((e) => e.t <= t).length}/{tl.events.length}</span>} className="xl:sticky xl:top-20 xl:self-start">

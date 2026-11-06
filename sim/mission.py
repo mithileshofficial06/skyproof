@@ -35,11 +35,11 @@ from skyproof_sim.world import World, load_permit
 CRUISE = 1.0
 APPROACH_ALT = 0.55
 CLIMB_ALT = 1.4
-DECISION_TIMEOUT_S = 7.0      # one 0G call (officer times out at 6 s)
+DECISION_TIMEOUT_S = 9.0      # one 0G call (officer times out at 8 s)
 PREFETCH_DIST = 0.55          # ask 0G about the next move this far before the end of the leg
 RETRY_WINDOW_S = 15.0         # keep trying this long (sim seconds) without an ALLOW, then safe-stop
 RETRY_PAUSE_S = 3.0
-TELEMETRY_EVERY = CTRL_HZ // 2  # 2 Hz
+TELEMETRY_EVERY = max(1, CTRL_HZ // 12)  # ~12 Hz for a smooth live view (the record keeps 2 Hz)
 SENSE_EVERY = 4               # sensor check every 4 control steps (12 Hz)
 BRAKE_DIST = 0.45             # reflex: brake if something is closer than this ahead
 SPOT_RADIUS = 0.15            # person within this of a drop spot counts as "in the spot"

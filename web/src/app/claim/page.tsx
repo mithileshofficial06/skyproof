@@ -57,7 +57,8 @@ export default function Claim() {
     return () => clearInterval(i);
   }, []);
   useEffect(() => {
-    if (index && !flightId) setFlightId((index.find((f) => f.scenario === "geofence_breach") ?? index[0]).flightId);
+    const want = new URLSearchParams(window.location.search).get("flight");
+    if (index && !flightId) setFlightId(want && index.some((f) => f.flightId === want) ? want : (index.find((f) => f.scenario === "geofence_breach") ?? index[0]).flightId);
   }, [index, flightId]);
   useEffect(() => {
     if (!flightId) return;

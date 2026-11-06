@@ -1,6 +1,7 @@
 "use client";
 import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EventFeed } from "@/components/EventFeed";
 import { Badge, cx, Panel, Stat } from "@/components/ui";
 import type { FlightEvent, Permit, Person, Prop, XY } from "@/lib/flight";
@@ -8,6 +9,13 @@ import { deriveFx } from "@/lib/fx";
 
 const Scene3D = dynamic(() => import("@/components/Scene3D"), { ssr: false });
 const WS_URL = process.env.NEXT_PUBLIC_OFFICER_WS || "ws://localhost:8787";
+const DELAY_MS = 220; // draw slightly in the past so there are always two samples to blend between
+
+interface Seg {
+  fromSeq: number;
+  toSeq: number;
+  anchorTx: string;
+}
 
 interface LiveState {
   t: number;
@@ -33,8 +41,13 @@ export default function Live() {
   const [netDown, setNetDown] = useState(false);
   const [closed, setClosed] = useState<string | null>(null);
   const ws = useRef<WebSocket | null>(null);
+  const [segs, setSegs] = useState<Seg[]>([]);
+  const [published, setPublished] = useState<string | null>(null);
   const seq = useRef(0);
   const tNow = useRef(0);
+  const buf = useRef<{ w: number; s: LiveState }[]>([]);
+  const lastHud = useRef(0);
+  const lastTrail = useRef(0);
 
   useEffect(() => {
     let stop = false;
@@ -68,13 +81,33 @@ export default function Live() {
             setFrame(null);
             setClosed(null);
             setNetDown(false);
+            setSegs([]);
+            setPublished(null);
+            buf.current = [];
             seq.current = 0;
             push({ kind: "permit", title: `Flight opened (${m.scenario})`, detail: `permit ${String(m.permitHash).slice(0, 18)}…`, status: "info" });
             break;
-          case "telemetry":
+          case "telemetry": {
+            // keep every sample for smooth motion; refresh the readouts and trail at a calm rate
+            const now = performance.now();
             tNow.current = m.state.t;
-            setState(m.state);
-            setTrail((x) => [...x.slice(-800), { pos: m.state.pos, alt: m.state.alt }]);
+            buf.current.push({ w: now, s: m.state });
+            if (buf.current.length > 90) buf.current.splice(0, buf.current.length - 90);
+            if (now - lastHud.current > 150) {
+              lastHud.current = now;
+              setState(m.state);
+            }
+            if (now - lastTrail.current > 300) {
+              lastTrail.current = now;
+              setTrail((x) => [...x.slice(-400), { pos: m.state.pos, alt: m.state.alt }]);
+            }
+            break;
+          }
+          case "sealed":
+            setSegs((x) => [...x, { fromSeq: m.fromSeq, toSeq: m.toSeq, anchorTx: m.anchorTx }]);
+            break;
+          case "published":
+            setPublished(m.flightId);
             break;
           case "scene":
             setPeople(m.people ?? []);
@@ -86,7 +119,7 @@ export default function Live() {
             break;
           case "decision": {
             const cmd = m.request.cmd;
-            push({ kind: "decision", title: `${cmd.type} → ${m.verdict}${m.code && m.code !== "OK" ? ` ${m.code}` : ""}`, detail: m.reason, status: m.verdict === "ALLOW" ? "ok" : m.verdict === "DENY" ? "deny" : "warn", source: m.source, zgRequestId: m.zgRequestId });
+            push({ kind: "decision", title: `${cmd.type} → ${m.verdict}${m.code && m.code !== "OK" ? ` ${m.code}` : ""}`, detail: m.reason, status: m.verdict === "ALLOW" ? "ok" : m.verdict === "DENY" ? "deny" : "warn", source: m.source, zgRequestId: m.zgRequestId, recordSeq: m.recordSeq, latencyMs: m.latencyMs ?? undefined });
             if (m.frame) setFrame({ src: `data:image/jpeg;base64,${m.frame}`, label: `${cmd.type} · ${m.verdict}` });
             break;
           }
@@ -94,7 +127,7 @@ export default function Live() {
             const sit = m.request.situation;
             const vetoed: Record<string, string> = Object.fromEntries((m.vetoed ?? []).map((v: { id: string; why: string }) => [v.id, v.why]));
             push({
-              kind: "situation", title: `${TITLES[sit.kind] ?? sit.kind} → ${m.choice ?? "no decision"}`, detail: m.reason, status: m.choice ? "ok" : "warn", source: m.source, zgRequestId: m.zgRequestId,
+              kind: "situation", title: `${TITLES[sit.kind] ?? sit.kind} → ${m.choice ?? "no decision"}`, detail: m.reason, status: m.choice ? "ok" : "warn", source: m.source, zgRequestId: m.zgRequestId, recordSeq: m.recordSeq, latencyMs: m.latencyMs ?? undefined,
               options: sit.options.map((o: { id: string; label: string }) => ({ id: o.id, label: o.label, vetoed: vetoed[o.id], chosen: o.id === m.choice })),
             });
             if (m.frame) setFrame({ src: `data:image/jpeg;base64,${m.frame}`, label: `${sit.kind} · ${m.choice ?? "no decision"}` });
@@ -123,6 +156,29 @@ export default function Live() {
       ws.current?.close();
     };
   }, []);
+
+  // blend the two telemetry samples around (now - DELAY_MS): steady motion with no jumps
+  const getDrone = useCallback(() => {
+    const b = buf.current;
+    if (!b.length) return null;
+    const rt = performance.now() - DELAY_MS;
+    let i = b.length - 1;
+    while (i > 0 && b[i - 1].w > rt) i--;
+    const a = b[Math.max(0, i - 1)];
+    const c = b[i];
+    const k = c.w === a.w ? 1 : Math.min(1, Math.max(0, (rt - a.w) / (c.w - a.w)));
+    const mix = (x: number, y: number) => x + (y - x) * k;
+    return {
+      pos: [mix(a.s.pos[0], c.s.pos[0]), mix(a.s.pos[1], c.s.pos[1])] as XY,
+      alt: mix(a.s.alt, c.s.alt),
+      vel: [mix(a.s.vel[0], c.s.vel[0]), mix(a.s.vel[1], c.s.vel[1]), mix(a.s.vel[2], c.s.vel[2])] as [number, number, number],
+      status: "ok" as const,
+    };
+  }, []);
+  const shown = useMemo(
+    () => events.map((e) => (e.recordSeq == null ? e : { ...e, anchorTx: segs.find((g) => e.recordSeq! >= g.fromSeq && e.recordSeq! <= g.toSeq)?.anchorTx })),
+    [events, segs],
+  );
 
   const last = events[events.length - 1];
   const status = last?.status === "breach" ? "breach" : last?.status === "deny" ? "deny" : last?.status === "warn" ? "warn" : "ok";
@@ -157,12 +213,20 @@ cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
         <div className="space-y-4">
           <div className="relative h-[60vh] min-h-[440px] overflow-hidden rounded-lg border border-[#e3ded3] bg-[#dfe7ec]">
             {permit ? (
-              <Scene3D permit={permit} drone={{ pos: state?.pos ?? permit.rallyPoints.HOME, alt: state?.alt ?? 0.05, vel: state?.vel ?? [0, 0, 0], status: fx?.label?.tone ?? status }} trail={trail} people={people} props={props} fx={fx} follow />
+              <Scene3D permit={permit} drone={{ pos: state?.pos ?? permit.rallyPoints.HOME, alt: state?.alt ?? 0.05, vel: state?.vel ?? [0, 0, 0], status: fx?.label?.tone ?? status }} trail={trail} people={people} props={props} fx={fx} follow getDrone={getDrone} />
             ) : (
               <div className="grid h-full place-items-center text-sm text-[#8a8d93]">Waiting for the officer…</div>
             )}
             {netDown && <div className="pointer-events-none absolute inset-x-0 top-0 bg-[#b91c1c] py-1.5 text-center text-xs font-semibold tracking-wide text-[#fff7f0]">LINK TO 0G CUT · the drone may not act until a safe stop</div>}
-            {closed && <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-[#d9d3c6] bg-[#fffdf8] px-4 py-1.5 text-xs text-[#3b2fa8]">Flight closed · sealing on 0G Storage + 0G Chain</div>}
+            {closed && (
+              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full border border-[#d9d3c6] bg-[#fffdf8] px-4 py-1.5 text-xs text-[#3b2fa8]">
+                {published ? (
+                  <Link href={`/flights/${published}`} className="font-semibold underline">Sealed on 0G · open the replay and proof →</Link>
+                ) : (
+                  "Flight closed · sealing on 0G Storage + 0G Chain…"
+                )}
+              </div>
+            )}
           </div>
           <div className="grid items-start gap-4 md:grid-cols-[1fr_320px]">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -185,7 +249,7 @@ cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
           </div>
         </div>
         <Panel title="Live decisions" icon={<span className="h-2 w-2 rounded-sm bg-[#c2410c]" />} className="xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
-          <div className="max-h-[70vh] overflow-y-auto pr-1">{events.length ? <EventFeed events={events} now={Number.POSITIVE_INFINITY} /> : <p className="text-sm text-[#8a8d93]">No flight yet.</p>}</div>
+          <div className="max-h-[70vh] overflow-y-auto pr-1">{events.length ? <EventFeed events={shown} now={Number.POSITIVE_INFINITY} /> : <p className="text-sm text-[#8a8d93]">No flight yet.</p>}</div>
         </Panel>
       </div>
     </div>
