@@ -1,27 +1,21 @@
 "use client";
 // The /experience canvas shell (specs/05-uiux.md 7.9): fixed, full-viewport, near-black with fog,
 // generated studio lighting, selective bloom on the HDR-bright parts, quality tiers that step down on slow GPUs.
-import { ContactShadows, Environment, Grid, Lightformer, PerformanceMonitor } from "@react-three/drei";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Environment, Grid, Lightformer, PerformanceMonitor } from "@react-three/drei";
+import { Canvas } from "@react-three/fiber";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
 import { Suspense } from "react";
 import { step } from "@/lib/quality";
 import { useUI } from "@/lib/store";
 import { X } from "@/lib/tokens";
 import { Drone } from "./Drone";
+import { FlightRig } from "./FlightRig";
 
 function Stage() {
-  // hero placement: right of the headline on wide screens, centred above it on tall ones.
-  // The flight rig (UI-4) takes over from here.
-  const wide = useThree((s) => s.size.width / s.size.height > 1);
-  const at: [number, number, number] = wide ? [1.25, 0.5, 2.2] : [0, 0.9, 1.6];
   return (
     <group>
       <Grid infiniteGrid position={[0, -1.6, 0]} cellSize={1} cellThickness={0.6} cellColor={X.gridSub} sectionSize={6} sectionThickness={1} sectionColor={X.grid} fadeDistance={70} fadeStrength={1.6} followCamera />
-      <group position={at} rotation={[0.18, -0.7, 0.04]}>
-        <Drone scale={wide ? 1.9 : 1.25} />
-      </group>
-      <ContactShadows position={[at[0], -1.59, at[2]]} opacity={0.55} scale={5} blur={2.6} far={2.5} resolution={256} frames={1} color="#000000" />
+      <FlightRig>{(climb) => <Drone climb={climb} />}</FlightRig>
     </group>
   );
 }
