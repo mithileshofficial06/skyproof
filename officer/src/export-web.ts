@@ -20,7 +20,9 @@ mkdirSync(`${TMP}dl`, { recursive: true });
 const { log, registry, deployment } = contracts(provider);
 const claimsByFlight = new Map<string, any[]>();
 for (const f of existsSync(`${TMP}claims`) ? readdirSync(`${TMP}claims`) : []) {
+  if (!f.endsWith(".json")) continue;
   const c = JSON.parse(readFileSync(`${TMP}claims/${f}`, "utf8"));
+  if (!Number.isInteger(c.claimId)) continue; // the claims desk keeps victim evidence and insurer notes here too
   const onchain = await escrow().claims(c.claimId);
   const entry = {
     claimId: c.claimId,
