@@ -20,7 +20,7 @@ export function Nav() {
         <Link href="/" className="cockpit shrink-0">
           <Logo className="text-[15px]" dark />
         </Link>
-        <div className="flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none]">
+        <div className="flex min-w-0 items-center gap-1 overflow-x-auto whitespace-nowrap [scrollbar-width:none] md:overflow-visible">
           {LINKS.map(([href, label]) => {
             const active = href === "/" ? path === "/" : path.startsWith(href);
             return (
