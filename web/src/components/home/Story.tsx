@@ -67,15 +67,15 @@ export function Story() {
       {/* the line */}
       <div className="relative mt-12">
         <div className="absolute left-[12.5%] right-[12.5%] top-7 h-[3px] rounded-full bg-[#e3ded3]" />
-        <div className="absolute left-[12.5%] top-7 h-[3px] rounded-full transition-all duration-700 ease-out" style={{ width: `${(step / (STEPS.length - 1)) * 75}%`, background: `linear-gradient(90deg, #7c5cff, ${s.color})` }} />
+        <div className="absolute left-[12.5%] top-7 h-[3px] rounded-full transition-all duration-700 ease-out" style={{ width: `${(step / (STEPS.length - 1)) * 75}%`, background: s.color }} />
         {/* the packet */}
         <span className="absolute top-7 z-0 -ml-2 -mt-[7px] h-4 w-4 rounded-full transition-all duration-700 ease-out" style={{ left: `${12.5 + step * 25}%`, background: s.color, boxShadow: `0 0 0 6px ${s.color}22, 0 0 18px ${s.color}` }} />
         <div className="relative z-10 grid grid-cols-4">
           {STEPS.map((x, i) => (
             <button key={x.key} onClick={() => go(i)} className="group flex flex-col items-center gap-3 text-center">
               <span
-                className={cx("grid h-14 w-14 place-items-center rounded-2xl border-2 font-mono text-sm font-bold transition-all duration-500", i === step ? "scale-110 text-white shadow-lg" : i < step ? "text-white" : "bg-[#fffdf8] text-[#8a8d93] group-hover:border-[#cfc8ba]")}
-                style={{ background: i <= step ? x.color : undefined, borderColor: i <= step ? x.color : "#e3ded3" }}
+                className={cx("grid h-14 w-14 place-items-center rounded-2xl border-2 font-mono text-sm font-bold transition-all duration-500", i === step ? "scale-110 text-white" : i < step ? "text-[#e1e3fa]" : "bg-[#0c0e2a]/70 text-[#8f93c4] group-hover:border-white/40")}
+                style={{ background: i <= step ? `linear-gradient(${x.color}${i === step ? "33" : "1a"}, ${x.color}${i === step ? "33" : "1a"}), #0c0e2a` : undefined, // a flat tint over a solid base, so the travelling dot hides behind it borderColor: i <= step ? x.color : "rgba(255,255,255,0.14)", boxShadow: i === step ? `0 0 0 6px ${x.color}1f` : undefined }}
               >
                 {String(i + 1).padStart(2, "0")}
               </span>
@@ -92,7 +92,7 @@ export function Story() {
       </div>
 
       {/* the open station */}
-      <div key={step} className="station mt-10 grid overflow-hidden rounded-2xl border lg:grid-cols-[0.9fr_1.1fr]" style={{ borderColor: `${s.color}55`, background: `${s.color}14` }}>
+      <div key={step} className="station mt-10 grid overflow-hidden rounded-2xl border border-l-[3px] bg-[#0c0e2a]/70 backdrop-blur-lg lg:grid-cols-[0.9fr_1.1fr]" style={{ borderColor: "rgba(255,255,255,0.1)", borderLeftColor: s.color }}>
         <div className="p-7 md:p-9">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em]" style={{ color: s.color }}>
             {String(step + 1).padStart(2, "0")} · {s.who}
@@ -108,7 +108,7 @@ export function Story() {
             </button>
           </div>
         </div>
-        <div className="relative min-h-[300px] border-t lg:border-l lg:border-t-0" style={{ borderColor: `${s.color}30`, background: "rgba(6,8,26,0.35)" }}>
+        <div className="relative min-h-[300px] border-t lg:border-l lg:border-t-0" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
           {[<Decide key={0} />, <Seal key={1} />, <Judge key={2} />, <Pay key={3} />][step]}
         </div>
       </div>
@@ -143,7 +143,7 @@ function Decide() {
         ))}
       </div>
       <div className="flex flex-col items-center gap-3">
-        <div className="grid h-20 w-20 place-items-center rounded-2xl bg-[#7c5cff] font-mono text-sm font-bold text-white shadow-[0_10px_30px_rgba(124,92,255,0.35)]">0G</div>
+        <div className="grid h-20 w-20 place-items-center rounded-2xl border-2 border-[#7c5cff] bg-[#7c5cff]/15 font-mono text-sm font-bold text-[#cfc4ff]">0G</div>
         <span className="stamp rounded border-2 border-[#0f766e] px-2 py-0.5 font-mono text-sm font-bold tracking-wider text-[#0f766e]" style={{ animationDelay: "0.8s" }}>
           ALLOW
         </span>
