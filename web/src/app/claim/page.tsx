@@ -1,42 +1,13 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { createPublicClient, createWalletClient, custom, defineChain, formatUnits, http, keccak256, parseAbi, stringToHex, toHex, type Address, type Hex } from "viem";
+import { formatUnits, keccak256, parseAbi, stringToHex, type Address, type Hex } from "viem";
 import escrowAbi from "@/lib/escrowAbi.json";
 import { Badge, cx, HashLink, Panel, Stat } from "@/components/ui";
 import { useIndex } from "@/lib/data";
-import { ARC_EXPLORER, buildTimeline, type FlightFile, scenarioLabel } from "@/lib/flight";
+import { AIRFRAME, arc, arcWallet, type ClaimView, connectArc, ESCROW, EVIDENCE_URL, packFile, pub, STATES, USDC } from "@/lib/arc";
+import { ARC_EXPLORER, buildTimeline, type FlightFile, scenarioLabel, ZG_EXPLORER } from "@/lib/flight";
 
-const ESCROW = (process.env.NEXT_PUBLIC_ARC_ESCROW || "0x10daa2dbded35f0056be1dbdbee908a12e4644d8") as Address;
-const USDC = "0x3600000000000000000000000000000000000000" as Address;
-const arc = defineChain({
-  id: 5042002,
-  name: "Arc Testnet",
-  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
-  rpcUrls: { default: { http: ["https://rpc.testnet.arc.network"] } },
-  blockExplorers: { default: { name: "Arcscan", url: ARC_EXPLORER } },
-  testnet: true,
-});
-const pub = createPublicClient({ chain: arc, transport: http() });
 const erc20 = parseAbi(["function approve(address,uint256) returns (bool)", "function allowance(address,address) view returns (uint256)", "function balanceOf(address) view returns (uint256)"]);
-const STATES = ["None", "Open", "WindowClosed", "Paid", "Held", "Resolved", "Expired"];
-const AIRFRAME = stringToHex("SKY-001", { size: 32 });
-
-type Eth = { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> };
-declare global {
-  interface Window {
-    ethereum?: Eth;
-  }
-}
-
-interface ClaimView {
-  victim: Address;
-  state: number;
-  verdict: number;
-  breachCode: Hex;
-  cap: bigint;
-  deposit: bigint;
-  incidentId: bigint;
-}
 
 export default function Claim() {
   const { data: index } = useIndex();
@@ -50,6 +21,9 @@ export default function Claim() {
   const [windowEnd, setWindowEnd] = useState<number | null>(null);
   const [now, setNow] = useState(Math.floor(Date.now() / 1000));
   const [txs, setTxs] = useState<{ label: string; hash: Hex }[]>([]);
+  const [statement, setStatement] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [sealed, setSealed] = useState<{ evidenceHash: Hex; rootHash: string; storageTx: string } | null>(null);
   const [info, setInfo] = useState<{ active: boolean; bond: bigint; cap: bigint; deposit: bigint; balance: bigint | null } | null>(null);
 
   useEffect(() => {
@@ -101,25 +75,12 @@ export default function Claim() {
     return { time, pos: s.pos };
   }, [flight]);
 
-  const wallet = () => {
-    if (!window.ethereum) throw new Error("MetaMask not found");
-    return createWalletClient({ chain: arc, transport: custom(window.ethereum), account: account! });
-  };
+  const wallet = () => arcWallet(account!);
 
   const connect = async () => {
     setError(null);
     try {
-      if (!window.ethereum) throw new Error("Install MetaMask to file a claim.");
-      const [a] = (await window.ethereum.request({ method: "eth_requestAccounts" })) as Address[];
-      try {
-        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: toHex(arc.id) }] });
-      } catch {
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params: [{ chainId: toHex(arc.id), chainName: arc.name, nativeCurrency: arc.nativeCurrency, rpcUrls: arc.rpcUrls.default.http, blockExplorerUrls: [ARC_EXPLORER] }],
-        });
-      }
-      setAccount(a);
+      setAccount(await connectArc());
     } catch (e) {
       setError((e as Error).message);
     }
@@ -147,7 +108,25 @@ export default function Claim() {
     const w = wallet();
     const allowance = await pub.readContract({ address: USDC, abi: erc20, functionName: "allowance", args: [account, ESCROW] });
     if (allowance < info.deposit) await step("Approve 1 USDC deposit", () => w.writeContract({ address: USDC, abi: erc20, functionName: "approve", args: [ESCROW, info.deposit], chain: arc, account }));
-    const evidence = keccak256(stringToHex(JSON.stringify({ flightId, what: "package struck a person", at: incident.pos })));
+    let evidence = keccak256(stringToHex(JSON.stringify({ flightId, what: "package struck a person", at: incident.pos })));
+    if (statement.trim()) {
+      // seal the victim's statement + photos on 0G Storage; the claim on Arc carries their fingerprint
+      setBusy("Sealing your evidence on 0G Storage");
+      setError(null);
+      try {
+        const packed = await Promise.all(files.map(packFile));
+        const r = await fetch(`${EVIDENCE_URL}/claim-evidence`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ flightId, statement, files: packed }) });
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || "evidence upload failed");
+        setSealed(j);
+        evidence = j.evidenceHash;
+      } catch (e) {
+        setError(`Evidence: ${(e as Error).message}`);
+        setBusy(null);
+        return;
+      }
+      setBusy(null);
+    }
     const before = (await pub.readContract({ address: ESCROW, abi: escrowAbi, functionName: "nextClaimId" })) as bigint;
     await step("Open claim on Arc", () =>
       w.writeContract({ address: ESCROW, abi: escrowAbi, functionName: "openClaim", args: [AIRFRAME, BigInt(incident.time), BigInt(Math.round(incident.pos[0] * 1e6)), BigInt(Math.round(incident.pos[1] * 1e6)), evidence], chain: arc, account }),
@@ -213,14 +192,35 @@ export default function Claim() {
         )}
       </Panel>
 
-      <Panel title="3 · Open the claim">
+      <Panel title="3 · Your evidence" right={<Badge tone="zg">sealed on 0G Storage</Badge>}>
+        <p className="text-xs text-[#55595f]">What happened to you? Add photos (injury, damage, the package) or a document. They are sealed on 0G Storage and their fingerprint goes into your claim on Arc, so nobody can change them later. An insurer reads them if the judge sends the claim to review.</p>
+        <textarea value={statement} onChange={(e) => setStatement(e.target.value)} disabled={claimId !== null} rows={3} maxLength={2000} placeholder="e.g. The package hit my shoulder at the drop zone around 4:12 AM. Bruised, saw a doctor." className="mt-3 w-full rounded-md border border-[#e3ded3] bg-[#f6f3ec] px-3 py-2 text-sm text-[#15171a] disabled:opacity-60" />
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-[#55595f]">
+          <input type="file" multiple accept="image/*,application/pdf" disabled={claimId !== null} onChange={(e) => setFiles(Array.from(e.target.files ?? []).slice(0, 4))} className="text-xs" />
+          <span>{files.length ? `${files.length} file(s) · photos are resized to 1280 px` : "up to 4 files (optional)"}</span>
+        </div>
+        {sealed && (
+          <div className="mt-3 space-y-0.5 font-mono text-[11px] text-[#55595f]">
+            <div>fingerprint <span className="text-[#15171a]">{sealed.evidenceHash}</span></div>
+            <div>0G root <span className="text-[#15171a]">{sealed.rootHash}</span></div>
+            <div>
+              0G tx{" "}
+              <a href={`${ZG_EXPLORER}/tx/${sealed.storageTx}`} target="_blank" rel="noreferrer" className="text-[#3b2fa8] underline">
+                {sealed.storageTx}
+              </a>
+            </div>
+          </div>
+        )}
+      </Panel>
+
+      <Panel title="4 · Open the claim">
         <button disabled={!account || !incident || !!busy || claimId !== null || !info?.active} onClick={fileClaim} className="rounded-md bg-[#15171a] px-5 py-2.5 text-sm font-semibold text-[#f4f1ea] hover:bg-[#2b2e33] disabled:opacity-40">
           {busy && claimId === null ? `${busy}…` : claimId !== null ? `Claim #${claimId} opened` : "Deposit 1 USDC and open the claim"}
         </button>
         {!info?.active && <p className="mt-2 text-xs text-[#b45309]">The drone is inactive: the operator&apos;s bond is below the payout cap.</p>}
       </Panel>
 
-      <Panel title="4 · Claim window">
+      <Panel title="5 · Claim window">
         {claimId === null ? (
           <p className="text-sm text-[#8a8d93]">Opens after the claim is filed. Other claims for the same incident can join during this window.</p>
         ) : (
@@ -233,7 +233,7 @@ export default function Claim() {
         )}
       </Panel>
 
-      <Panel title="5 · The Chainlink judge" right={state && <Badge tone={state === "Paid" ? "ok" : state === "Held" ? "warn" : "mute"}>{state}</Badge>}>
+      <Panel title="6 · The Chainlink judge" right={state && <Badge tone={state === "Paid" ? "ok" : state === "Held" ? "warn" : "mute"}>{state}</Badge>}>
         {!closeTx ? (
           <p className="text-sm text-[#8a8d93]">Closing the window emits <span className="font-mono">ClaimWindowClosed</span>, the event that triggers the Chainlink CRE workflow.</p>
         ) : (
@@ -246,6 +246,11 @@ cre workflow simulate verdict --non-interactive --trigger-index 0 \\
               <div className={cx("rounded-md border p-4", claim.verdict === 1 ? "border-[#b7dcd6] bg-[#ecf7f5]" : "border-[#efd3a6] bg-[#fdf6ea]")}>
                 <div className="text-lg font-semibold text-[#15171a]">{claim.verdict === 1 ? `BREACH · ${formatUnits(claim.cap, 6)} USDC paid to you` : "REVIEW · funds held for the insurer"}</div>
                 <div className="mt-1 text-xs text-[#55595f]">{claim.verdict === 1 ? "Your 1 USDC deposit was refunded too." : "No objective rule was broken; the insurer decides with the verified evidence."}</div>
+                {claim.verdict !== 1 && (
+                  <a href="/insurer" className="mt-2 inline-block text-xs font-semibold text-[#3b2fa8] underline">
+                    See it on the insurer desk →
+                  </a>
+                )}
               </div>
             )}
           </div>
