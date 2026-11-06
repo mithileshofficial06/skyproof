@@ -1,5 +1,18 @@
 [
  {
+  "flightId": "SKY-001-people_below-1794001490157",
+  "scenario": "people_below",
+  "startedAt": 1794001490158,
+  "records": 34,
+  "decisions": 8,
+  "zgDecisions": 8,
+  "intact": true,
+  "verdict": "REVIEW",
+  "breaches": [],
+  "chainFlightId": "0x47a7405d0906f225fbc0d688949ec0f61ce97e93374ffe83f026ac225ab7e067",
+  "claims": []
+ },
+ {
   "flightId": "SKY-001-full-1793999437321",
   "scenario": "full",
   "startedAt": 1793999437321,

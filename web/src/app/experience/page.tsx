@@ -68,7 +68,7 @@ export default function Experience() {
     <ScrollProvider>
       <Stage3D />
       <ModeBadge />
-      <div className="relative z-10 text-x-text">
+      <div data-exp data-nav="light" className="relative z-10 text-x-text">
         <section className="flex min-h-[92vh] flex-col justify-end pb-24">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-x-cyan">Independent · tamper-evident</p>
           <h1 className="mt-5 max-w-4xl text-[clamp(2.5rem,6vw,5rem)] font-semibold leading-[1.02] tracking-[-0.035em]">The black box drones can&apos;t lie to.</h1>

@@ -1,27 +1,13 @@
 "use client";
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import escrowAbi from "@/lib/escrowAbi.json";
+// Home, in the ozky layout: Lander (title + a real sealed flight replaying in 3D + system status), the people
+// SkyProof serves, the real problem, how each sponsor network proves a step, a live check against 0G Chain, CTA.
 import FlightReplay from "@/components/FlightReplay";
-import { Hero } from "@/components/home/Hero";
-import ProofCheck from "@/components/ProofCheck";
 import { Problem } from "@/components/home/Problem";
-import { Sponsors } from "@/components/home/Sponsors";
-import { Story } from "@/components/home/Story";
-import { WithWithout } from "@/components/home/WithWithout";
-import { Reveal } from "@/components/motion";
-import { ChoiceCard, Icon } from "@/components/simple";
-import { type ClaimView, ESCROW, pub } from "@/lib/arc";
+import { Lander } from "@/components/oz/Lander";
+import { RuneGlitch } from "@/components/oz/RuneGlitch";
+import { Cta, Insights, Roles } from "@/components/oz/Sections";
+import ProofCheck from "@/components/ProofCheck";
 import { pickFlight, useFlight, useIndex } from "@/lib/data";
-
-const SITUATIONS = [
-  { t: "A crane on the route", o: ["CLIMB", "LEFT", "RIGHT", "WAIT", "RETURN"], note: "the reflex brakes first" },
-  { t: "People under the flight path", o: ["CLIMB_OVER", "SHIFT_LEFT", "SHIFT_RIGHT", "WAIT"], note: "illegal options are vetoed" },
-  { t: "Choosing the drop spot", o: ["A", "B", "C", "NONE"], note: "with a fake “safe” sign" },
-  { t: "Drop zone blocked", o: ["WAIT_MORE", "BACKUP_ZONE", "RETURN"], note: "the package still arrives" },
-  { t: "Gust and battery fault", o: ["CONTINUE", "HOLD", "LAND_NEAREST"], note: "CONTINUE vetoed on battery" },
-  { t: "0G unreachable", o: ["HOLD", "DIVERT", "LAND"], note: "safe stop, never a fake decision" },
-];
 
 export default function Home() {
   const { data: index } = useIndex();
@@ -29,163 +15,67 @@ export default function Home() {
   const breach = index ? pickFlight(index, "geofence_breach") : null;
   const { data: flight } = useFlight(pick?.flightId ?? null);
   const { data: cheatFlight } = useFlight(breach?.flightId ?? null);
-  const paid = usePaidOnArc();
   const stats = index && {
     flights: index.length,
     records: index.reduce((a, f) => a + f.records, 0),
     decisions: index.reduce((a, f) => a + f.zgDecisions, 0),
-    intact: index.filter((f) => f.intact).length,
   };
 
   return (
     <div>
-      <Hero
-        liveHref="/live"
-        replayHref={pick ? `/flights/${pick.flightId}` : "/flights"}
-        stats={[
-          { label: "flights sealed on 0G", value: stats ? stats.flights : null },
-          { label: "records sealed", value: stats ? stats.records : null },
-          { label: "decisions by 0G", value: stats ? stats.decisions : null },
-          { label: "USDC paid on Arc", value: paid },
-        ]}
+      <Lander
+        band={
+          flight ? (
+            <div className="relative h-full">
+              <FlightReplay flight={flight} compact />
+            </div>
+          ) : (
+            <div className="relative grid h-full place-items-center">
+              <RuneGlitch fill cell={34} gap={14} runeSize={20} />
+              <span className="mono relative text-[11px] text-gold">Loading a sealed flight from 0G…</span>
+            </div>
+          )
+        }
       />
 
-      {/* one door per person: the victim, the insurer, the operator */}
-      <section aria-labelledby="choose" className="mx-auto max-w-6xl px-1 py-14">
-        <h2 id="choose" className="text-center text-3xl font-semibold tracking-[-0.02em] text-[#15171a] md:text-4xl">What do you need?</h2>
-        <p className="mx-auto mt-3 max-w-xl text-center text-[15px] text-[#55595f]">Pick the one that fits you. Each path is a few simple steps.</p>
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
-          <ChoiceCard href="/claim" icon={<Icon name="alert" />} title="I was affected by a drone" text="A drone or its package hurt you or damaged your things. Tell us what happened and we check the drone's black box." cta="Report a problem" />
-          <ChoiceCard href="/insurer" icon={<Icon name="inbox" />} title="I review claims" text="See the claims that need a person to decide, with the drone's record and the victim's photos side by side." cta="Open the claims inbox" />
-          <ChoiceCard href="/operator" icon={<Icon name="drone" />} title="I run drones" text="Watch flights live, open the black box of past flights, and check that records were never changed." cta="Go to operator tools" />
-        </div>
-        <p className="mt-6 text-center text-sm text-[#55595f]">
-          Already reported something?{" "}
-          <Link href="/track" className="font-semibold text-[#15171a] underline decoration-[#7c5cff] decoration-2 underline-offset-4">
-            Track your claim
-          </Link>
-        </p>
-      </section>
-
-      <Band n="01" label="The problem">
-      <Problem />
-      </Band>
-
-      <Band n="02" label="How it works" tint>
-      <Story />
-      </Band>
-
-      <Band n="03" label="Two endings">
-      <WithWithout />
-      </Band>
-
-      <Band n="04" label="Built on" tint>
-      <Sponsors />
-      </Band>
-
-      <Band n="05" label="Don't trust us">
-      {/* try to cheat */}
-      <section id="check" className="scroll-mt-24">
-        <Reveal>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#c2410c]">Don&apos;t trust us</p>
-          <h2 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight tracking-[-0.02em] text-[#15171a] md:text-4xl">Try to cheat. Your browser checks the record against 0G Chain.</h2>
-          <p className="mt-3 max-w-2xl text-[15px] text-[#55595f]">This is the flight where the operator disabled the safety gate. Forge a 0G approval, fake the GPS or delete a record, and watch the chain break.</p>
-        </Reveal>
-        <div className="mt-8">{cheatFlight ? <ProofCheck flight={cheatFlight} /> : <div className="h-40 rounded-lg border border-[#e3ded3]" />}</div>
-      </section>
-      </Band>
-
-      <Band n="06" label="A real flight" tint>
-      {/* real flight */}
-      <section>
-        <Reveal>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#c2410c]">A real flight</p>
-          <h2 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight tracking-[-0.02em] text-[#15171a] md:text-4xl">Rebuilt from 0G Storage and replayed in the city.</h2>
-        </Reveal>
-        <div className="mt-10 h-[520px]">
-          {flight ? <FlightReplay flight={flight} compact /> : <div className="grid h-full place-items-center rounded-lg border border-[#e3ded3] text-sm text-[#8a8d93]">Loading a sealed flight…</div>}
-        </div>
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm text-[#55595f]">
-          <span>Crowd, crane, fake sign, gust and battery fault, all decided by 0G.</span>
-          {pick && (
-            <Link href={`/flights/${pick.flightId}`} className="font-semibold text-[#15171a] underline decoration-[#7c5cff] decoration-2 underline-offset-4">
-              Open the full replay with every decision →
-            </Link>
-          )}
-        </div>
-      </section>
-      </Band>
-
-      <Band n="07" label="What 0G decides">
-      {/* situations */}
-      <section>
-        <Reveal>
-          <p className="font-mono text-xs uppercase tracking-[0.18em] text-[#c2410c]">What 0G decides</p>
-          <h2 className="mt-3 max-w-3xl text-3xl font-semibold leading-tight tracking-[-0.02em] text-[#15171a] md:text-4xl">Not just yes or no. When something happens in flight, 0G chooses what the drone does.</h2>
-        </Reveal>
-        <div className="mt-10 grid gap-px overflow-hidden rounded-lg border border-[#e3ded3] bg-[#e3ded3] sm:grid-cols-2 lg:grid-cols-3">
-          {SITUATIONS.map((s, i) => (
-            <Reveal key={s.t} delay={i * 70} className="bg-[#fffdf8] p-5">
-              <h3 className="font-semibold text-[#15171a]">{s.t}</h3>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {s.o.map((o) => (
-                  <span key={o} className="rounded border border-[#c7c2ef] bg-[#f1effd] px-1.5 py-0.5 font-mono text-[11px] text-[#3b2fa8]">
-                    {o}
-                  </span>
-                ))}
-              </div>
-              <p className="mt-3 text-xs text-[#8a8d93]">{s.note}</p>
-            </Reveal>
+      {stats && (
+        <section className="grid grid-cols-3 border-y border-ink bg-grey text-ink" aria-label="Live totals">
+          {[
+            ["flights sealed on 0G", stats.flights],
+            ["records sealed", stats.records],
+            ["decisions by 0G", stats.decisions],
+          ].map(([l, v], i) => (
+            <div key={String(l)} className={`px-5 py-8 sm:px-8 ${i ? "border-l border-ink" : ""}`}>
+              <div className="font-display text-[clamp(2rem,5vw,4.5rem)] font-semibold leading-none tracking-[-0.04em]">{Number(v).toLocaleString()}</div>
+              <div className="mono mt-2 text-[10px]">{l}</div>
+            </div>
           ))}
-        </div>
-      </section>
-      </Band>
-
-      <div className="py-24" />
-      <Reveal>
-        <section className="cockpit relative overflow-hidden rounded-xl bg-[#0b1017] px-8 py-14 md:px-12">
-          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#7c5cff]/25 blur-[90px]" />
-          <h2 className="relative max-w-2xl text-3xl font-semibold tracking-tight text-white">A drone that cannot act without a recorded decision can&apos;t hide one.</h2>
-          <p className="relative mt-4 max-w-2xl text-[#94a3b3]">Missing records prove tampering. Every flight here was rebuilt from 0G and checked fingerprint by fingerprint.</p>
-          <div className="relative mt-8 flex flex-wrap gap-3">
-            <Link href="/flights" className="rounded-md bg-[#22d3ee] px-5 py-3 text-sm font-semibold text-[#061018]">
-              Browse sealed flights
-            </Link>
-            <Link href="/claim" className="rounded-md border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10">
-              File a claim on Arc
-            </Link>
-          </div>
         </section>
-      </Reveal>
-    </div>
-  );
-}
+      )}
 
-/** Total USDC paid to victims by automatic BREACH verdicts, read from the escrow on Arc. */
-function usePaidOnArc() {
-  const [paid, setPaid] = useState<number | null>(null);
-  useEffect(() => {
-    (async () => {
-      const next = Number(await pub.readContract({ address: ESCROW, abi: escrowAbi, functionName: "nextClaimId" }));
-      const cs = await Promise.all(Array.from({ length: next - 1 }, (_, i) => pub.readContract({ address: ESCROW, abi: escrowAbi, functionName: "claims", args: [BigInt(i + 1)] }) as Promise<ClaimView>));
-      setPaid(cs.filter((c) => c.state === 3).reduce((a, c) => a + Number(c.cap) / 1e6, 0));
-    })().catch(() => setPaid(null));
-  }, []);
-  return paid;
-}
+      <Roles />
 
-/** A full-width band per section: divider line, alternating tint, numbered label, generous spacing. */
-function Band({ n, label, tint, children }: { n: string; label: string; tint?: boolean; children: React.ReactNode }) {
-  return (
-    <div className={`relative left-1/2 w-screen -translate-x-1/2 border-t border-white/10 ${tint ? "bg-white/[0.035]" : ""}`}>
-      <div className="mx-auto max-w-[1400px] px-5 py-24 sm:px-8">
-        <div className="mb-10 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.24em] text-[#9599c8]">
-          <span className="text-[#f5f6ff]">{n}</span>
-          <span className="h-px w-10 bg-white/25" />
-          {label}
-        </div>
-        {children}
-      </div>
+      <section className="border-t border-ink bg-grey px-5 py-20 sm:px-8">
+        <p className="mono mb-8 text-[10px]">01 · The problem is real</p>
+        <Problem />
+      </section>
+
+      <Insights
+        visual={
+          <div className="relative h-full">
+            <RuneGlitch fill cell={30} gap={12} runeSize={18} />
+          </div>
+        }
+      />
+
+      <section id="check" className="scroll-mt-24 border-t border-ink bg-grey px-5 py-20 sm:px-8">
+        <p className="mono text-[10px]">02 · Don&apos;t trust us</p>
+        <h2 className="mt-4 max-w-4xl font-display text-[clamp(2rem,4.4vw,4rem)] font-medium leading-[0.98] tracking-[-0.03em]">Try to cheat. Your browser checks the record against 0G Chain.</h2>
+        <p className="mono mt-5 max-w-[60ch] text-[11px] leading-[1.8]">This is the flight where the operator disabled the safety gate. Forge a 0G approval, fake the GPS or delete a record, and watch the chain break.</p>
+        <div className="mt-10">{cheatFlight ? <ProofCheck flight={cheatFlight} /> : <div className="h-40 border border-ink" />}</div>
+      </section>
+
+      <Cta />
     </div>
   );
 }

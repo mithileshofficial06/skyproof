@@ -17,7 +17,7 @@ export function EventFeed({ events, now, onSeek }: { events: FlightEvent[]; now:
       {visible.map((e, i) => {
         const latest = i === visible.length - 1;
         return (
-          <div role="button" tabIndex={0} key={`${e.seq}-${e.kind}`} onClick={() => onSeek?.(e.t)} className={cx("rowin relative flex w-full cursor-pointer gap-3 py-3 pl-3 pr-2 text-left transition-colors hover:bg-[#f6f3ec]", latest && "bg-[#f6f3ec]")}>
+          <div role="button" tabIndex={0} key={`${e.seq}-${e.kind}`} onClick={() => onSeek?.(e.t)} className={cx("oz-card rowin relative flex w-full cursor-pointer gap-3 py-3 pl-3 pr-2 text-left transition-colors hover:bg-[#f6f3ec]", latest && "oz-latest bg-[#f6f3ec]")}>
             <span className={cx("absolute left-0 top-3 bottom-3 w-[3px] rounded", BAR[e.status])} />
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-1.5">

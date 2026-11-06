@@ -384,7 +384,7 @@ cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
             </Panel>
           </div>
         </div>
-        <Panel title="Live decisions" icon={<span className="h-2 w-2 rounded-sm bg-[#c2410c]" />} className="xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
+        <Panel title="Live decisions" icon={<span className="h-2 w-2 rounded-sm bg-[#c2410c]" />} className="oz-feed xl:max-h-[calc(100vh-7rem)] xl:overflow-hidden">
           <div className="max-h-[70vh] overflow-y-auto pr-1">{events.length ? <EventFeed events={shown} now={Number.POSITIVE_INFINITY} /> : <p className="text-sm text-[#8a8d93]">No flight yet.</p>}</div>
         </Panel>
       </div>

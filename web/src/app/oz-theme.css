@@ -1,0 +1,88 @@
+/* ozky design system applied to the existing SkyProof pages.
+   Palette: gold #ffd60a · ink #222222 · grey #bababa. Square corners, no glass, no gradients.
+   The pages still use their original colour classes; this layer maps whole families of them onto the palette.
+   /experience (marked data-exp) keeps its own dark 3D look. Selectors start with `html body.oz.cockpit` so they
+   outrank the older theme rules in globals.css. */
+
+html { background: #bababa !important; scrollbar-width: thin; scrollbar-color: #222222 #bababa; }
+html body.oz { color: #222222; background: #bababa; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #bababa; }
+::-webkit-scrollbar-thumb { background: #222222; border-radius: 999px; }
+::selection { background: #ffd60a; color: #222222; }
+
+/* every legacy text colour → ink; every legacy border / underline → ink */
+html body.oz.cockpit [class*="text-[#"]:not([data-exp] *) { color: #222222; }
+html body.oz.cockpit :is([class*="border-[#"], [class*="border-l-[#"], [class*="border-t-[#"], [class*="border-b-[#"]):not([data-exp] *) { border-color: #222222; }
+html body.oz.cockpit [class*="decoration-[#"]:not([data-exp] *) { text-decoration-color: #222222; }
+html body.oz.cockpit :is(.border-white\/10, .border-white\/12, .border-white\/20):not([data-exp] *) { border-color: #222222; }
+html body.oz.cockpit :is(.text-white, .text-white\/90, .text-white\/80):not([data-exp] *) { color: #222222; }
+
+/* light / glass surfaces → transparent on the grey page, framed by their ink border */
+html body.oz.cockpit :is([class*="bg-[#fffdf8]"], [class*="bg-[#faf8f3]"], [class*="bg-[#f6f3ec]"], [class*="bg-[#faf6ee]"], [class*="bg-[#ebe6db]"], [class*="bg-[#e6e1d6]"], [class*="bg-[#f4f1ea]"], [class*="bg-[#f3f5f8]"], [class*="bg-[#f1effd]"], [class*="bg-[#ebe6ff]"], [class*="bg-[#eef3fc]"], [class*="bg-[#f5f8ff]"], [class*="bg-[#f5f6ff]"], [class*="bg-[#ece7dc]"], [class*="bg-[#e3ded3]"], [class*="bg-[#d9d3c6]"], [class*="bg-[#cfc8ba]"], [class*="bg-[#cbd5e1]"], [class*="bg-[#94a3b8]"], [class*="bg-[#fdf6ea]"], .bg-white\/10, .bg-white\/12):not([data-exp] *) {
+  background-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+/* dark surfaces → ink with grey text */
+html body.oz.cockpit :is([class*="bg-[#0b1017]"], [class*="bg-[#06071c]"], [class*="bg-[#04050c]"], [class*="bg-[#1a1d4a]"], [class*="bg-[#101822]"], [class*="bg-[#16212d]"], [class*="bg-[#0c0e2a]"], [class*="bg-[#2b2e33]"], [class*="bg-[#111821]"], [class*="bg-[#0b0f14]"]):not([data-exp] *) {
+  background-color: #222222;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+html body.oz.cockpit :is([class*="bg-[#0b1017]"], [class*="bg-[#06071c]"], [class*="bg-[#04050c]"], [class*="bg-[#1a1d4a]"], [class*="bg-[#101822]"], [class*="bg-[#16212d]"], [class*="bg-[#0c0e2a]"], [class*="bg-[#2b2e33]"], [class*="bg-[#111821]"], [class*="bg-[#0b0f14]"]):not([data-exp] *) :is([class*="text-[#"], .text-white) { color: #bababa; }
+
+/* primary buttons / pills (ink fill) → ink with gold text */
+html body.oz.cockpit [class*="bg-[#15171a]"]:not([class*="hover:bg-[#15171a]"]):not([data-exp] *) { background-color: #222222; color: #ffd60a; }
+html body.oz.cockpit [class*="bg-[#15171a]"]:not([class*="hover:bg-[#15171a]"]):not([data-exp] *) [class*="text-[#"] { color: #ffd60a; }
+html body.oz.cockpit [class*="text-[#f4f1ea]"][class*="bg-[#15171a]"]:not([data-exp] *) { color: #ffd60a; }
+html body.oz.cockpit [class*="file:bg-[#15171a]"]::file-selector-button { background: #222222; color: #ffd60a; border-radius: 999px; }
+
+/* positive accents (done, approve, paid) → gold with ink */
+html body.oz.cockpit :is([class*="bg-[#0f766e]"], [class*="bg-[#0d5f59]"], [class*="bg-[#10b981]"], [class*="bg-[#ecf7f5]"], [class*="bg-[#eaf7f9]"], [class*="bg-[#eef8fa]"], [class*="bg-[#bfe0e8]"], [class*="bg-[#e9c46a]"]):not([data-exp] *) { background-color: #ffd60a; color: #222222; }
+html body.oz.cockpit :is([class*="bg-[#0f766e]"], [class*="bg-[#0d5f59]"], [class*="bg-[#10b981]"]):not([data-exp] *) :is([class*="text-[#"], .text-white) { color: #222222; }
+html body.oz.cockpit :is([class*="bg-[#0f766e]"], [class*="bg-[#0d5f59]"], [class*="bg-[#10b981]"]):not([data-exp] *).text-white { color: #222222; }
+
+/* negative / warning / brand accents → ink with gold */
+html body.oz.cockpit :is([class*="bg-[#b91c1c]"], [class*="bg-[#ff4d4f]"], [class*="bg-[#c2410c]"], [class*="bg-[#b45309]"], [class*="bg-[#7c5cff]"], [class*="bg-[#6d4fe0]"], [class*="bg-[#375bd2]"], [class*="bg-[#22d3ee]"], [class*="bg-[#2775ca]"], [class*="bg-[#fdf0f0]"], [class*="bg-[#fbe4e4]"], [class*="bg-[#f3b4b4]"]):not([data-exp] *) { background-color: #222222; color: #ffd60a; }
+html body.oz.cockpit :is([class*="bg-[#b91c1c]"], [class*="bg-[#c2410c]"], [class*="bg-[#b45309]"], [class*="bg-[#fdf0f0]"], [class*="bg-[#fbe4e4]"]):not([data-exp] *) :is([class*="text-[#"], .text-white) { color: #ffd60a; }
+html body.oz.cockpit :is([class*="bg-[#b91c1c]"], [class*="bg-[#c2410c]"], [class*="bg-[#b45309]"], [class*="bg-[#fdf0f0]"], [class*="bg-[#fbe4e4]"]):not([data-exp] *).text-white { color: #ffd60a; }
+html body.oz.cockpit :is([class*="bg-[#fdf0f0]"], [class*="bg-[#fbe4e4]"]):not([data-exp] *)[class*="text-[#"] { color: #ffd60a; }
+html body.oz.cockpit :is([class*="bg-[#ecf7f5]"], [class*="bg-[#eaf7f9]"], [class*="bg-[#eef8fa]"]):not([data-exp] *)[class*="text-[#"] { color: #222222; }
+
+/* HUD panels floating over the 3D view → ink with grey text; the active camera button turns gold */
+html body.oz.cockpit .absolute:is([class*="bg-[#fffdf8]"], [class*="bg-[#0b1017]"], [class*="bg-[#15171a]/70"], [class*="bg-[#06071c]"]):not([data-exp] *) { background-color: #222222; color: #bababa; }
+html body.oz.cockpit .absolute:is([class*="bg-[#fffdf8]"], [class*="bg-[#0b1017]"], [class*="bg-[#15171a]/70"], [class*="bg-[#06071c]"]):not([data-exp] *) [class*="text-[#"] { color: #bababa; }
+html body.oz.cockpit .absolute:is([class*="bg-[#fffdf8]"], [class*="bg-[#0b1017]"]):not([data-exp] *) [class*="bg-[#15171a]"] { background-color: #ffd60a; color: #222222; }
+
+/* brutalist: square corners (pills and the ozky shell keep their own radii) */
+html body.oz.cockpit :is(.rounded, .rounded-sm, .rounded-md, .rounded-lg, .rounded-xl, .rounded-2xl):not([data-exp] *) { border-radius: 0; }
+html body.oz.cockpit :is(.shadow, .shadow-sm, .shadow-md, .shadow-lg):not([data-exp] *) { box-shadow: none; }
+
+/* form controls on grey */
+html body.oz.cockpit :is(input, select, textarea):not([data-exp] *) { background-color: transparent; color: #222222; border-color: #222222; }
+html body.oz.cockpit :is(input, textarea)::placeholder { color: #555555; }
+html body.oz.cockpit select option { background: #bababa; color: #222222; }
+
+/* headings: Inter, tight */
+html body.oz :is(h1, h2, h3, .font-display) { font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif; letter-spacing: -0.02em; }
+
+/* control bars inside overlays on the 3D view (camera modes, playback) → ink bar, grey labels, gold active */
+html body.oz.cockpit .absolute [class*="bg-[#fffdf8]/95"]:not([data-exp] *) { background-color: #222222; border-color: #222222; }
+html body.oz.cockpit .absolute [class*="bg-[#fffdf8]/95"]:not([data-exp] *) [class*="text-[#"] { color: #bababa; }
+html body.oz.cockpit .absolute [class*="bg-[#fffdf8]/95"]:not([data-exp] *) [class*="bg-[#15171a]"] { background-color: #ffd60a; color: #222222; }
+/* the Experience 3D story keeps its dark canvas: the fixed canvas sits under the page body */
+html body.oz:has([data-exp]) { background: #05070a; }
+
+/* Live page: the decisions panel is gold; each decision is a grey card with ink text */
+html body.oz.cockpit section.oz-feed.oz-feed.oz-feed.oz-feed { background-color: #ffd60a; border-color: #222222; }
+html body.oz.cockpit .oz-feed > header { border-color: #222222; }
+html body.oz.cockpit .oz-feed .divide-y { display: flex; flex-direction: column; gap: 8px; }
+html body.oz.cockpit .oz-feed .divide-y > * { border-top-width: 0; }
+html body.oz.cockpit .oz-feed .oz-card { background-color: #bababa; border: 1px solid #222222; padding-left: 14px; }
+html body.oz.cockpit .oz-feed .oz-card:hover { background-color: #cfcfcf; }
+html body.oz.cockpit .oz-feed .oz-card.oz-latest { background-color: #bababa; outline: 2px solid #222222; outline-offset: -2px; }
+html body.oz.cockpit .oz-feed .oz-card [class*="text-[#"] { color: #222222; }
+html body.oz.cockpit .oz-feed :is(p, span)[class*="text-[#8a8d93]"] { color: #222222; }
