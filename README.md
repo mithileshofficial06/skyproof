@@ -313,6 +313,19 @@ End to end on testnet (7 Nov 2026): a flight started from the website (0G decide
 
 ## Docs, credits and AI usage
 
+| Document | What it covers |
+|---|---|
+| [PRD](docs/PRD.md) | problem, users, goals, user stories with acceptance criteria |
+| [TRD](docs/TRD.md) | components, decision loop, record format, sealing, escrow state machine, judge, APIs, security, tests |
+| [Architecture](docs/Architecture.md) | system diagram, flight and claim sequence diagrams, trust boundaries, data locations |
+| [Sponsor tracks](docs/Sponsor_Tracks.md) | each sponsor's requirements, submission items and judging constraints, mapped to evidence; submission checklist; demo video script |
+| [Sponsors](docs/Sponsors.md) | what 0G, Chainlink and Arc are and how each is used |
+| [Setup](docs/Setup.md) | try it, run locally, host on Vercel, troubleshooting |
+| [Deployments](docs/Deployments.md) | every contract address and key transaction |
+| [Implementation plan](docs/Implementation_Plan.md) | phases, status, what's left |
+| [E2E test report](docs/E2E_Test_Report_2026-11-07.md) | hosted-site end-to-end test and score |
+| [CLAUDE.md](CLAUDE.md) / [AGENTS.md](AGENTS.md) | rules for AI coding agents working on this repo |
+
 - Explainer of the current system: [`docs/SkyProof_Explained_Current.md`](docs/SkyProof_Explained_Current.md)
 - CRE security audit + fix log: [`docs/CRE_Security_Audit_2026-11-06.md`](docs/CRE_Security_Audit_2026-11-06.md)
 - Arc review: [`docs/Arc_Review_2026-11-06.md`](docs/Arc_Review_2026-11-06.md)
