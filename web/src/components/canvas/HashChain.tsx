@@ -11,11 +11,13 @@ import { X } from "@/lib/tokens";
 const OK = new THREE.Color(X.cyan).multiplyScalar(2.2);
 const BAD = new THREE.Color(X.danger).multiplyScalar(2.2);
 const LIFT = 0.32; // cubes ride just above the trail
+const PICK = new THREE.Color("#ffffff").multiplyScalar(2.4);
 
 export function HashChain({ curve, count, onPick }: { curve: THREE.Curve<THREE.Vector3>; count: number; onPick?: (i: number) => void }) {
   const mesh = useRef<THREE.InstancedMesh>(null);
   const tmp = useMemo(() => new THREE.Color(), []);
   const dirty = useRef(false);
+  const shown = useRef<number | null>(null);
   const geo = useMemo(() => new THREE.BoxGeometry(0.16, 0.16, 0.28), []);
   const mat = useMemo(() => new THREE.MeshBasicMaterial({ toneMapped: false }), []);
   useEffect(() => () => void (geo.dispose(), mat.dispose()), [geo, mat]);
@@ -46,10 +48,11 @@ export function HashChain({ curve, count, onPick }: { curve: THREE.Curve<THREE.V
     if (!m) return;
     const st = useUI.getState();
     if (st.tamperIndex === null || st.tamperClock === null) {
-      if (dirty.current) {
-        for (let i = 0; i < count; i++) m.setColorAt(i, OK);
+      if (dirty.current || shown.current !== st.selected) {
+        for (let i = 0; i < count; i++) m.setColorAt(i, i === st.selected ? PICK : OK);
         if (m.instanceColor) m.instanceColor.needsUpdate = true;
         dirty.current = false;
+        shown.current = st.selected;
       }
       return;
     }

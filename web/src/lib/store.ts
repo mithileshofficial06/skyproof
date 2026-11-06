@@ -17,6 +17,8 @@ interface UI {
   tamperClock: number | null; // start time (s) of the hash cascade
   flight: FlightRecord | null; // the sealed flight shown by Two Truths (from the data adapter)
   setFlight: (f: FlightRecord | null) => void;
+  selected: number | null; // record picked in the tamper playground
+  setSelected: (i: number | null) => void;
   setScroll: (v: number) => void;
   setMode: (m: Mode) => void;
   setVerdict: (v: Verdict) => void;
@@ -35,6 +37,8 @@ export const useUI = create<UI>((set) => ({
   tamperClock: null,
   flight: null,
   setFlight: (flight) => set({ flight }),
+  selected: null,
+  setSelected: (selected) => set({ selected }),
   setScroll: (scroll) => set({ scroll }),
   setMode: (mode) => set({ mode }),
   setVerdict: (verdict) => set({ verdict }),

@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { ModeBadge } from "@/components/experience/ModeBadge";
 import { ScrollProvider } from "@/components/experience/ScrollProvider";
 import { Stage3D } from "@/components/experience/Stage3D";
+import { TamperPanel } from "@/components/experience/TamperPanel";
 import { source } from "@/lib/data/adapter";
 import { useUI } from "@/lib/store";
 import { X } from "@/lib/tokens";
@@ -42,6 +43,16 @@ export default function Experience() {
     };
   }, []);
 
+  // keyboard: T jumps to the tamper playground
+  useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      if (e.key.toLowerCase() !== "t" || /input|select|textarea/i.test((e.target as HTMLElement).tagName)) return;
+      document.getElementById("two-truths")?.scrollIntoView({ behavior: "smooth" });
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  }, []);
+
   // the whole page sits on the near-black stage
   useEffect(() => {
     const prev = document.body.style.background;
@@ -75,7 +86,13 @@ export default function Experience() {
               <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-x-cyan">{s.kicker}</p>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight">{s.title}</h2>
               <p className="mt-3 text-[15px] leading-[1.6] text-x-muted">{s.body}</p>
-              {s.id === "two-truths" && <TruthsLegend />}
+              {s.id === "two-truths" && (
+                <>
+                  <TruthsLegend />
+                  <TamperPanel />
+                </>
+              )}
+              {s.id === "problem" && <ProblemFacts />}
             </div>
           </section>
         ))}
@@ -86,8 +103,6 @@ export default function Experience() {
 
 function TruthsLegend() {
   const flight = useUI((s) => s.flight);
-  const tamper = useUI((s) => s.tamperIndex);
-  const verdict = useUI((s) => s.verdict);
   if (!flight) return <p className="mt-4 font-mono text-[11px] text-x-muted">Loading a sealed flight…</p>;
   return (
     <div className="mt-5 space-y-2 border-t border-x-border pt-4 font-mono text-[11px]">
@@ -100,11 +115,22 @@ function TruthsLegend() {
       <p className="pt-1 text-x-muted">
         {flight.id} · {flight.blocks.length} records · {flight.anchors.length} anchors ({flight.anchorsFrom === "0g-chain" ? "read from 0G Chain" : "replay"})
       </p>
-      {tamper !== null && (
-        <p aria-live="polite" className={verdict === "fail" ? "text-x-danger" : "text-x-amber"}>
-          Local simulation: record #{tamper} edited on a copy. {verdict === "fail" ? `${flight.blocks.length - tamper} of ${flight.blocks.length} fingerprints no longer match.` : "Rechecking…"}
-        </p>
-      )}
     </div>
+  );
+}
+
+// Problem section: two documented cases (sources from docs/Deep_Research_2026-11-05.md)
+function ProblemFacts() {
+  return (
+    <ul className="mt-5 space-y-3 border-t border-x-border pt-4 text-[13px] leading-relaxed text-x-muted">
+      <li>
+        <span className="text-x-text">Barcarès, France · 3 injured.</span> The investigator could not check the operator&apos;s story: the flight logs were gone from the drone, the tablet and the phone.{" "}
+        <a href="https://bea.aero/fileadmin/user_upload/BEA2019-0416_1.pdf" target="_blank" rel="noreferrer" className="font-mono text-[11px] text-x-cyan underline underline-offset-2">BEA ↗</a>
+      </li>
+      <li>
+        <span className="text-x-text">Tolleson, USA · 2 drones hit a crane.</span> Flights resumed in about 48 hours on the operator&apos;s own review of its own telemetry.{" "}
+        <a href="https://www.cnbc.com/2025/10/02/amazon-drone-crash-faa-ntsb.html" target="_blank" rel="noreferrer" className="font-mono text-[11px] text-x-cyan underline underline-offset-2">CNBC ↗</a>
+      </li>
+    </ul>
   );
 }

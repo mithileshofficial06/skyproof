@@ -19,7 +19,7 @@ export function TelemetryGroup() {
   return (
     <group position={truthsAnchor}>
       <Trails curve={curve} blocks={flight.blocks.length} />
-      <HashChain curve={curve} count={flight.blocks.length} />
+      <HashChain curve={curve} count={flight.blocks.length} onPick={(i) => useUI.getState().setSelected(i)} />
     </group>
   );
 }
