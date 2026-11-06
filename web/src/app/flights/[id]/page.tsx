@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import FlightReplay from "@/components/FlightReplay";
+import { FlightSummary } from "@/components/FlightSummary";
 import { Badge } from "@/components/ui";
 import { useFlight } from "@/lib/data";
 import { scenarioLabel, short, ZG_EXPLORER } from "@/lib/flight";
@@ -36,6 +37,7 @@ export default function FlightPage() {
       </div>
       {error && <p className="text-[#b91c1c]">Could not load this flight: {error}</p>}
       {data && <FlightReplay flight={data} />}
+      {data && <FlightSummary flightId={data.flightId} />}
     </div>
   );
 }

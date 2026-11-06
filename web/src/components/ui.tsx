@@ -48,7 +48,7 @@ export function Stat({ label, value, sub, tone }: { label: string; value: ReactN
 
 export function HashLink({ href, hash, n = 8 }: { href?: string; hash?: string | null; n?: number }) {
   if (!hash) return <span className="font-mono text-xs text-[#8a8d93]">—</span>;
-  const body = <span className="font-mono text-xs text-[#33363b]">{short(hash, n)}</span>;
+  const body = <span className="whitespace-nowrap font-mono text-xs text-[#33363b]">{short(hash, n)}</span>;
   return href ? (
     <a href={href} target="_blank" rel="noreferrer" className="underline decoration-[#cfc8ba] underline-offset-2 hover:decoration-[#15171a]">
       {body}
