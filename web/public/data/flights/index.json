@@ -1,5 +1,18 @@
 [
  {
+  "flightId": "SKY-001-normal-1793993825071",
+  "scenario": "normal",
+  "startedAt": 1793993825072,
+  "records": 32,
+  "decisions": 8,
+  "zgDecisions": 8,
+  "intact": true,
+  "verdict": "REVIEW",
+  "breaches": [],
+  "chainFlightId": "0x806284f4761f54fe36ee68db6373cdad62240075e82fd627ea166fe7b7400e43",
+  "claims": []
+ },
+ {
   "flightId": "SKY-001-people_below-1793990913726",
   "scenario": "people_below",
   "startedAt": 1793990913726,
@@ -10,7 +23,23 @@
   "verdict": "REVIEW",
   "breaches": [],
   "chainFlightId": "0x1f60d79085aaf7f8a158a2347e551d00a839527355cc8e5dd867f819f8ca1c0d",
-  "claims": []
+  "claims": [
+   {
+    "claimId": 6,
+    "state": "Paid",
+    "verdict": "BREACH"
+   },
+   {
+    "claimId": 7,
+    "state": "Paid",
+    "verdict": "BREACH"
+   },
+   {
+    "claimId": 8,
+    "state": "Held",
+    "verdict": "REVIEW"
+   }
+  ]
  },
  {
   "flightId": "SKY-001-people_below-1793978674781",

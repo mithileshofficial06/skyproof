@@ -583,14 +583,14 @@ function useRadial() {
   }, []);
 }
 
-// ---- sponsor flags: a waving cloth with the sponsor's name painted on (no external logo files)
-type FlagSpec = { label: string; sub: string; bg: string; fg: string };
+// ---- sponsor flags: a waving cloth printed with the sponsor's official logo (web/public/logos, see CREDITS.md)
+type FlagSpec = { label: string; logo: string; sub: string; bg: string; fg: string };
 const SPONSORS: (FlagSpec & { xy: XY })[] = [
-  { label: "0G", sub: "decides · stores · proves", bg: "#7c5cff", fg: "#ffffff", xy: [1.0, -0.22] },
-  { label: "Chainlink", sub: "CRE judge", bg: "#375bd2", fg: "#ffffff", xy: [2.25, -0.22] },
-  { label: "Arc", sub: "USDC payout", bg: "#0b1220", fg: "#ffffff", xy: [3.02, 2.55] },
+  { label: "0G", logo: "/logos/0g-white.svg", sub: "decides · stores · proves", bg: "#0a0a0f", fg: "#ffffff", xy: [1.0, -0.22] },
+  { label: "Chainlink", logo: "/logos/chainlink-white.svg", sub: "CRE judge", bg: "#375bd2", fg: "#ffffff", xy: [2.25, -0.22] },
+  { label: "Arc", logo: "/logos/arc-white.svg", sub: "USDC payout", bg: "#0b1220", fg: "#ffffff", xy: [3.02, 2.55] },
 ];
-function useFlagTexture({ label, sub, bg, fg }: FlagSpec) {
+function useFlagTexture({ label, logo, sub, bg, fg }: FlagSpec) {
   const tex = useMemo(() => {
     const c = document.createElement("canvas");
     c.width = 512;
@@ -598,18 +598,27 @@ function useFlagTexture({ label, sub, bg, fg }: FlagSpec) {
     const ctx = c.getContext("2d")!;
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, 512, 320);
-    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    ctx.fillStyle = "rgba(255,255,255,0.14)";
     ctx.fillRect(0, 0, 18, 320); // hem by the pole
-    ctx.fillStyle = fg;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `700 ${label.length > 4 ? 92 : 150}px "Space Grotesk", system-ui, sans-serif`;
-    ctx.fillText(label, 265, sub ? 140 : 160);
-    if (sub) {
-      ctx.font = `600 38px system-ui, sans-serif`;
-      ctx.globalAlpha = 0.85;
-      ctx.fillText(sub, 265, 248);
-    }
+    // the logo box: centred, leaving room for the one-line role underneath
+    const box = { x: 60, y: sub ? 46 : 70, w: 410, h: sub ? 160 : 180 };
+    const caption = () => {
+      if (!sub) return;
+      ctx.fillStyle = fg;
+      ctx.globalAlpha = 0.8;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `600 34px system-ui, sans-serif`;
+      ctx.fillText(sub, 265, 262);
+      ctx.globalAlpha = 1;
+    };
+    const fallback = () => {
+      ctx.fillStyle = fg;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `700 ${label.length > 4 ? 92 : 140}px system-ui, sans-serif`;
+      ctx.fillText(label, 265, box.y + box.h / 2);
+    };
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 4;
@@ -619,8 +628,24 @@ function useFlagTexture({ label, sub, bg, fg }: FlagSpec) {
     back.repeat.x = -1;
     back.offset.x = 1;
     back.needsUpdate = true;
+    caption();
+    const img = new Image();
+    img.onload = () => {
+      const k = Math.min(box.w / img.width, box.h / img.height);
+      const w = img.width * k;
+      const h = img.height * k;
+      ctx.drawImage(img, box.x + (box.w - w) / 2, box.y + (box.h - h) / 2, w, h);
+      t.needsUpdate = true;
+      back.needsUpdate = true;
+    };
+    img.onerror = () => {
+      fallback();
+      t.needsUpdate = true;
+      back.needsUpdate = true;
+    };
+    img.src = logo;
     return { front: t, back };
-  }, [label, sub, bg, fg]);
+  }, [label, logo, sub, bg, fg]);
   useEffect(() => () => (tex.front.dispose(), tex.back.dispose()), [tex]);
   return tex;
 }
@@ -657,7 +682,7 @@ function Cloth({ spec, w, h, speed = 4.5, amp = 0.07 }: { spec: FlagSpec; w: num
   );
 }
 function SponsorFlag({ xy, ...spec }: FlagSpec & { xy: XY }) {
-  const H = 0.6;
+  const H = 0.7;
   return (
     <group position={v(xy[0], xy[1], 0)} rotation-y={0.35}>
       <mesh position={[0, 0.012, 0]} receiveShadow>
@@ -672,8 +697,8 @@ function SponsorFlag({ xy, ...spec }: FlagSpec & { xy: XY }) {
         <sphereGeometry args={[0.012, 12, 12]} />
         <meshStandardMaterial color="#e5c07b" metalness={0.9} roughness={0.25} />
       </mesh>
-      <group position={[0.006, H - 0.085, 0]}>
-        <Cloth spec={spec} w={0.27} h={0.17} />
+      <group position={[0.006, H - 0.11, 0]}>
+        <Cloth spec={spec} w={0.36} h={0.22} />
       </group>
     </group>
   );
@@ -689,7 +714,7 @@ function SponsorFlags() {
 }
 
 const ZG_PURPLE = new THREE.Color("#7c5cff");
-const ZG_PENNANT: FlagSpec = { label: "0G", sub: "", bg: "#7c5cff", fg: "#ffffff" };
+const ZG_PENNANT: FlagSpec = { label: "0G", logo: "/logos/0g-white.svg", sub: "", bg: "#0a0a0f", fg: "#ffffff" };
 
 function Drone({ drone: droneProp, fx, shared, getDrone }: { drone: DroneView; fx: SceneFx; shared: Shared; getDrone?: () => DroneView | null }) {
   const { scene } = useGLTF("/models/drone.glb");

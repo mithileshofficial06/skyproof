@@ -7,7 +7,9 @@ export function LiveBackground() {
       <div className="blob blob-b" />
       <div className="blob blob-c" />
       <div className="blob blob-d" />
-      <div className="absolute inset-0 bg-[#04050c]/45" />
+      <div className="blob blob-e" />
+      <div className="blob blob-f" />
+      <div className="absolute inset-0 bg-[#04050c]/30" />
     </div>
   );
 }
