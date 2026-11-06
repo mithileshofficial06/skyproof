@@ -37,7 +37,7 @@ export default function Home() {
   };
 
   return (
-    <div className="space-y-32">
+    <div>
       <Hero
         liveHref="/live"
         replayHref={pick ? `/flights/${pick.flightId}` : "/flights"}
@@ -49,14 +49,23 @@ export default function Home() {
         ]}
       />
 
+      <Band n="01" label="The problem">
       <Problem />
+      </Band>
 
+      <Band n="02" label="How it works" tint>
       <Story />
+      </Band>
 
+      <Band n="03" label="Two endings">
       <WithWithout />
+      </Band>
 
+      <Band n="04" label="Built on" tint>
       <Sponsors />
+      </Band>
 
+      <Band n="05" label="Don't trust us">
       {/* try to cheat */}
       <section>
         <Reveal>
@@ -66,7 +75,9 @@ export default function Home() {
         </Reveal>
         <div className="mt-8">{cheatFlight ? <ProofCheck flight={cheatFlight} /> : <div className="h-40 rounded-lg border border-[#e3ded3]" />}</div>
       </section>
+      </Band>
 
+      <Band n="06" label="A real flight" tint>
       {/* real flight */}
       <section>
         <Reveal>
@@ -85,7 +96,9 @@ export default function Home() {
           )}
         </div>
       </section>
+      </Band>
 
+      <Band n="07" label="What 0G decides">
       {/* situations */}
       <section>
         <Reveal>
@@ -108,7 +121,9 @@ export default function Home() {
           ))}
         </div>
       </section>
+      </Band>
 
+      <div className="py-24" />
       <Reveal>
         <section className="cockpit relative overflow-hidden rounded-xl bg-[#0b1017] px-8 py-14 md:px-12">
           <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#7c5cff]/25 blur-[90px]" />
@@ -139,4 +154,20 @@ function usePaidOnArc() {
     })().catch(() => setPaid(null));
   }, []);
   return paid;
+}
+
+/** A full-width band per section: divider line, alternating tint, numbered label, generous spacing. */
+function Band({ n, label, tint, children }: { n: string; label: string; tint?: boolean; children: React.ReactNode }) {
+  return (
+    <div className={`relative left-1/2 w-screen -translate-x-1/2 border-t border-white/10 ${tint ? "bg-white/[0.035]" : ""}`}>
+      <div className="mx-auto max-w-[1400px] px-5 py-24 sm:px-8">
+        <div className="mb-10 flex items-center gap-3 font-mono text-[11px] uppercase tracking-[0.24em] text-[#9599c8]">
+          <span className="text-[#f5f6ff]">{n}</span>
+          <span className="h-px w-10 bg-white/25" />
+          {label}
+        </div>
+        {children}
+      </div>
+    </div>
+  );
 }

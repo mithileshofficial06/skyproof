@@ -23,7 +23,7 @@ function Mark() {
 
 export function Hero({ stats, liveHref, replayHref }: { stats: { label: string; value: number | null }[]; liveHref: string; replayHref: string }) {
   return (
-    <section className="relative left-1/2 -mt-20 flex min-h-[100svh] w-screen -translate-x-1/2 items-center overflow-hidden text-[#f5f6ff]">
+    <section className="relative left-1/2 -mt-24 flex min-h-[100svh] w-screen -translate-x-1/2 items-center overflow-hidden text-[#f5f6ff]">
       <div className="relative mx-auto w-full max-w-[1400px] px-5 py-28 text-center sm:px-8">
         <p className="hero-fade font-mono text-[11px] uppercase tracking-[0.3em] text-[#c9ccf2]/80" style={{ ["--d" as string]: "0ms" }}>
           ETHGlobal Mumbai 2026 · 0G · Chainlink CRE · Arc

@@ -336,3 +336,7 @@ body {
 .cockpit .bg-\[\#e3ded3\] { background-color: rgba(255,255,255,0.1); }
 /* overlays sitting on the bright 3D city need dark glass to stay readable */
 .cockpit .absolute.bg-\[\#fffdf8\]\/95, .cockpit .absolute .bg-\[\#fffdf8\]\/95, .cockpit .absolute.bg-\[\#fffdf8\] { background-color: rgba(6,8,26,0.72); backdrop-filter: blur(10px); }
+
+/* ---- type + layout ---------------------------------------------------------------------------- */
+h1, h2, h3, .font-display { font-family: var(--font-display), var(--font-geist-sans), system-ui, sans-serif; letter-spacing: -0.02em; }
+body { overflow-x: clip; }

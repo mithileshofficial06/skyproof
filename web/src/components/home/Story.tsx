@@ -92,7 +92,7 @@ export function Story() {
       </div>
 
       {/* the open station */}
-      <div key={step} className="station mt-10 grid overflow-hidden rounded-2xl border lg:grid-cols-[0.9fr_1.1fr]" style={{ borderColor: `${s.color}40`, background: s.tint }}>
+      <div key={step} className="station mt-10 grid overflow-hidden rounded-2xl border lg:grid-cols-[0.9fr_1.1fr]" style={{ borderColor: `${s.color}55`, background: `${s.color}14` }}>
         <div className="p-7 md:p-9">
           <p className="font-mono text-[11px] uppercase tracking-[0.14em]" style={{ color: s.color }}>
             {String(step + 1).padStart(2, "0")} · {s.who}
@@ -100,7 +100,7 @@ export function Story() {
           <h3 className="mt-2 text-2xl font-semibold tracking-tight text-[#15171a] md:text-[28px]">{s.title}</h3>
           <p className="mt-3 max-w-md text-[15px] leading-relaxed text-[#45484e]">{s.body}</p>
           <div className="mt-6 flex gap-2">
-            <button onClick={() => go((step + STEPS.length - 1) % STEPS.length)} className="rounded-md border border-[#d9d3c6] bg-white/70 px-3 py-1.5 text-xs font-semibold text-[#33363b] hover:bg-white">
+            <button onClick={() => go((step + STEPS.length - 1) % STEPS.length)} className="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#f5f6ff] hover:bg-white/20">
               ← Back
             </button>
             <button onClick={() => go((step + 1) % STEPS.length)} className="rounded-md px-3 py-1.5 text-xs font-semibold text-white" style={{ background: s.color }}>
@@ -108,7 +108,7 @@ export function Story() {
             </button>
           </div>
         </div>
-        <div className="relative min-h-[300px] border-t lg:border-l lg:border-t-0" style={{ borderColor: `${s.color}30`, background: "#fffdf8" }}>
+        <div className="relative min-h-[300px] border-t lg:border-l lg:border-t-0" style={{ borderColor: `${s.color}30`, background: "rgba(6,8,26,0.35)" }}>
           {[<Decide key={0} />, <Seal key={1} />, <Judge key={2} />, <Pay key={3} />][step]}
         </div>
       </div>
@@ -119,13 +119,13 @@ export function Story() {
 function DroneIcon() {
   return (
     <svg viewBox="0 0 64 64" className="h-16 w-16">
-      <g stroke="#15171a" strokeWidth="2.4" fill="none">
+      <g stroke="#f5f6ff" strokeWidth="2.4" fill="none">
         <path d="M20 20l24 24M44 20L20 44" />
         {[[16, 16], [48, 16], [16, 48], [48, 48]].map(([x, y]) => (
           <ellipse key={`${x}${y}`} cx={x} cy={y} rx="9" ry="3" className="rotor" />
         ))}
       </g>
-      <rect x="26" y="26" width="12" height="12" rx="3" fill="#15171a" />
+      <rect x="26" y="26" width="12" height="12" rx="3" fill="#f5f6ff" />
     </svg>
   );
 }
