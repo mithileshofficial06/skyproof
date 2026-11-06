@@ -8,7 +8,13 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: "SkyProof · An independent black box for autonomous drones",
-  description: "0G decides and records. Chainlink judges. Arc pays.",
+  description: "When a drone hurts someone, the only record belongs to the operator. SkyProof: 0G decides and records, Chainlink judges, Arc pays the victim in USDC.",
+  openGraph: {
+    title: "SkyProof · An independent black box for autonomous drones",
+    description: "0G decides and records. Chainlink judges. Arc pays.",
+    type: "website",
+  },
+  twitter: { card: "summary", title: "SkyProof", description: "0G decides and records. Chainlink judges. Arc pays." },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

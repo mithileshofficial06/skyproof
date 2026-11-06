@@ -121,7 +121,8 @@ export default function Claim() {
         setSealed(j);
         evidence = j.evidenceHash;
       } catch (e) {
-        setError(`Evidence: ${(e as Error).message}`);
+        const msg = (e as Error).message;
+        setError(/fetch|network/i.test(msg) ? "The evidence service is offline, so photos can't be sealed right now. Clear the statement to file the claim without attachments." : `Evidence: ${msg}`);
         setBusy(null);
         return;
       }

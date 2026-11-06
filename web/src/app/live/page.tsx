@@ -239,7 +239,13 @@ export default function Live() {
 
       {conn !== "open" && (
         <Panel>
-          <p className="text-sm text-[#33363b]">Start the officer and fly a mission to watch it live:</p>
+          <p className="text-sm text-[#33363b]">
+            {conn === "connecting" ? "Connecting to the flight computer…" : "No live flight right now. Live missions stream from the team's flight computer during demos."}{" "}
+            <Link href="/flights" className="font-semibold text-[#22d3ee] underline underline-offset-2">
+              Watch a sealed flight instead →
+            </Link>
+          </p>
+          <p className="mt-3 text-xs text-[#8a8d93]">Running it yourself? Start the officer and fly a mission:</p>
           <pre className="mt-3 overflow-x-auto rounded-md bg-[#f6f3ec] p-4 font-mono text-xs text-[#33363b]">{`cd officer; pnpm officer
 cd sim; .venv\\Scripts\\python.exe mission.py --scenario full --gui`}</pre>
         </Panel>

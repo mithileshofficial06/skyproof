@@ -16,7 +16,7 @@ export default function FlightPage() {
           <Link href="/flights" className="text-xs text-[#8a8d93] hover:text-[#15171a]">
             ← All flights
           </Link>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#15171a]">{data ? scenarioLabel(data.scenario) : "Loading flight…"}</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[#15171a]">{data ? scenarioLabel(data.scenario) : error ? "Flight not found" : "Loading flight…"}</h1>
           {data && (
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[#55595f]">
               <Badge tone="zg">Rebuilt from 0G Storage</Badge>
