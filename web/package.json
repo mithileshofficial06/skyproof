@@ -12,15 +12,19 @@
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "@react-three/postprocessing": "^3.2.2",
+    "gsap": "^3.15.1",
+    "lenis": "^1.3.27",
     "next": "15.5.29",
     "postprocessing": "^6.39.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "three": "^0.187.0",
-    "viem": "^2.57.16"
+    "viem": "^2.57.16",
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.64.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -28,7 +32,10 @@
     "@types/three": "^0.187.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.29",
+    "jsdom": "^30.1.3",
+    "leva": "^0.10.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.1.0"
   }
 }

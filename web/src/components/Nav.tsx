@@ -9,6 +9,7 @@ const LINKS = [
   ["/live", "Live"],
   ["/claim", "File a claim"],
   ["/insurer", "Insurer"],
+  ["/experience", "3D experience"],
 ] as const;
 
 export function Nav() {

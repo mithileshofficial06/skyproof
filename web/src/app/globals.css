@@ -5,6 +5,22 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
+/* /experience design tokens (specs/05-uiux.md Section 9); mirrored in src/lib/tokens.ts for 3D */
+@theme {
+  --color-x-bg: #05070a;
+  --color-x-surface: #0b0f14;
+  --color-x-surface2: #111821;
+  --color-x-border: rgb(255 255 255 / 0.08);
+  --color-x-text: #e6edf3;
+  --color-x-muted: #8b98a5;
+  --color-x-cyan: #22d3ee;
+  --color-x-amber: #f5a524;
+  --color-x-danger: #ff3b30;
+  --color-x-pass: #22c55e;
+  --color-x-capsule: #ff6a00;
+  --ease-x: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 /* Mission Control: a dark command bar and cockpit (Live, hero), light "investigation report" pages.
    Sponsor colours are fixed across the site: 0G violet, Chainlink blue, Arc teal. */
 :root {
