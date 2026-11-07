@@ -1,4 +1,4 @@
-// Animated hero: a delivery drone crosses a city map; each stage of SkyProof appears as it happens.
+// Animated hero: an autonomous drone (a delivery drone in the demo) crosses a city map; each stage of SkyProof appears as it happens.
 const ROUTE = "M 70 330 C 150 330, 170 250, 250 240 S 380 180, 430 120 S 520 70, 560 90";
 
 const STAMPS: { x: number; y: number; delay: number; tone: string; title: string; sub: string }[] = [

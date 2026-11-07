@@ -33,3 +33,6 @@ Thumbs.db
 # third-party clones
 sim/third_party/
 sim/results/
+
+# demo video work files (large)
+/video/

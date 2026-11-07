@@ -3,7 +3,7 @@
 This file follows the AGENTS.md convention (read by Codex, Cursor, Copilot agents and similar). Claude Code reads [CLAUDE.md](CLAUDE.md), which has the same rules.
 
 ## Project in one paragraph
-SkyProof is a black box for delivery drones. A PyBullet drone (`sim/`) asks the officer service (`officer/`) before every safety action; the officer asks a vision model on **0G Private Computer** and records a signed, hash-chained log that is encrypted to **0G Storage** every 15 s and fingerprinted on **0G Chain** (`contracts/contracts/FlightLog.sol`). Victims file claims on an **Arc** USDC escrow built in Arc Studio (`contracts/arc/SkyProofEscrow.sol`). A **Chainlink CRE** workflow (`cre/judge/verdict/`) verifies the record against 0G and decides; the escrow pays or holds for an insurer. The website (`web/`) is the front end for victims, insurers and operators.
+SkyProof is a black box for autonomous drones; the demo uses a delivery drone. A PyBullet drone (`sim/`) asks the officer service (`officer/`) before every safety action; the officer asks a vision model on **0G Private Computer** and records a signed, hash-chained log that is encrypted to **0G Storage** every 15 s and fingerprinted on **0G Chain** (`contracts/contracts/FlightLog.sol`). Victims file claims on an **Arc** USDC escrow built in Arc Studio (`contracts/arc/SkyProofEscrow.sol`). A **Chainlink CRE** workflow (`cre/judge/verdict/`) verifies the record against 0G and decides; the escrow pays or holds for an insurer. The website (`web/`) is the front end for victims, insurers and operators.
 
 ## Setup and checks
 - Full setup: [docs/Setup.md](docs/Setup.md). Architecture: [docs/Architecture.md](docs/Architecture.md). Specs: [docs/TRD.md](docs/TRD.md).

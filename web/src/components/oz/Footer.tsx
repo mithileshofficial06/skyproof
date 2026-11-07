@@ -4,21 +4,36 @@
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { footer, nav } from "@/lib/ozContent";
-import { gsap, ScrollTrigger } from "@/lib/ozScroll";
+import { gsap, reducedMotion } from "@/lib/ozScroll";
 import { OzLogo } from "./Logo";
 
 export function Footer() {
   const root = useRef<HTMLElement>(null);
+  // Reveal when the footer actually enters the viewport. A visibility observer (not pre-measured scroll
+  // positions) keeps working when a page grows after loading or the route changes under the persistent footer.
   useEffect(() => {
     const el = root.current;
     if (!el) return;
     const q = (s: string) => Array.from(el.querySelectorAll<HTMLElement>(s));
-    const tw = [
-      gsap.from(q("[data-box]"), { y: 80, autoAlpha: 0, duration: 1.1, ease: "power2.inOut", scrollTrigger: { trigger: el, start: "top 85%" } }),
-      gsap.from(q("[data-ftext]"), { y: -28, autoAlpha: 0, duration: 1, ease: "power2.inOut", stagger: 0.08, scrollTrigger: { trigger: el, start: "top 80%" } }),
-    ];
-    ScrollTrigger.refresh();
-    return () => tw.forEach((t) => (t.scrollTrigger?.kill(), t.kill()));
+    const box = q("[data-box]");
+    const text = q("[data-ftext]");
+    if (reducedMotion()) return;
+    gsap.set(box, { y: 80, autoAlpha: 0 });
+    gsap.set(text, { y: -28, autoAlpha: 0 });
+    let played = false;
+    const play = () => {
+      if (played) return;
+      played = true;
+      gsap.to(box, { y: 0, autoAlpha: 1, duration: 1.1, ease: "power2.inOut" });
+      gsap.to(text, { y: 0, autoAlpha: 1, duration: 1, ease: "power2.inOut", stagger: 0.08, delay: 0.15 });
+    };
+    const io = new IntersectionObserver((e) => e.some((x) => x.isIntersecting) && play(), { threshold: 0.05 });
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      gsap.killTweensOf([...box, ...text]);
+      gsap.set([...box, ...text], { clearProps: "all" }); // never leave the footer hidden
+    };
   }, []);
 
   const ext = (h: string) => /^https?:/.test(h);

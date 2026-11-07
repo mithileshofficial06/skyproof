@@ -162,7 +162,7 @@ export default function Claim() {
       <div>
         <h1 className="text-3xl font-semibold tracking-tight text-[#15171a]">Report a problem</h1>
         <p className="mt-2 text-[15px] leading-relaxed text-[#55595f]">
-          Hurt, or something damaged, by a delivery drone? Tell us what happened. We check the drone&apos;s sealed black box. If it broke a safety rule, you are paid automatically. If not, an insurer looks at your case and replies with a reason.
+          Hurt, or something damaged, by a drone? Tell us what happened. We check the drone&apos;s sealed black box. If it broke a safety rule, you are paid automatically. If not, an insurer looks at your case and replies with a reason.
         </p>
       </div>
 

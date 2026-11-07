@@ -93,7 +93,7 @@ Known limits: simulation only (no DON deploy access); workflow-ID pinning on the
 | Item | Value | Done |
 |---|---|---|
 | Project name | SkyProof | ✅ |
-| Short description | "An independent, tamper-proof black box for delivery drones: 0G decides and records every move, Chainlink CRE judges claims, and an Arc Studio USDC escrow pays victims automatically." | ✅ |
+| Short description | "An independent, tamper-proof black box for autonomous drones (demo: a delivery drone): 0G decides and records every move, Chainlink CRE judges claims, and an Arc Studio USDC escrow pays victims automatically." | ✅ |
 | Bounties selected | 0G Physical AI · Arc Advanced Stablecoin Logic · Chainlink CRE | ☐ select in the form |
 | GitHub | https://github.com/mithileshofficial06/skyproof (`main`) | ✅ |
 | Live demo | https://sky-proof.vercel.app | ✅ |

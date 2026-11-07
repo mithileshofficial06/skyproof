@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Product** | SkyProof: an independent black box for autonomous delivery drones, with automatic compensation |
+| **Product** | SkyProof: an independent black box for autonomous drones, with automatic compensation (demo: a delivery drone) |
 | **One line** | 0G decides and records. Chainlink judges. Arc pays. |
 | **Event** | ETHGlobal Mumbai, 5–7 Nov 2026 |
 | **Tracks** | 0G "Physical AI: Agents with a Body" · Arc "Best Smart Contracts with Advanced Stablecoin Logic, in Arc Studio" · Chainlink "Best workflow with CRE" |
@@ -13,7 +13,7 @@
 
 ## 1. Problem
 
-Delivery drones already make safety decisions by themselves: whether it is safe to drop a package, when to land, how to avoid an obstacle. When one of those decisions hurts someone:
+Autonomous drones already make safety decisions by themselves: a delivery drone decides whether it is safe to drop a package, a farm drone when to spray, an inspection drone how close to fly, any drone when to land and how to avoid an obstacle. When one of those decisions hurts someone:
 
 1. **The only record belongs to the operator being investigated.** It can be edited, lost or withheld.
 2. **Nobody can prove what the drone decided, or why.** "The drone responded as designed" cannot be checked.
@@ -21,7 +21,7 @@ Delivery drones already make safety decisions by themselves: whether it is safe 
 
 **Evidence that the problem is real**
 - *BEA (French air-accident bureau) report 2019-0416:* a drone fell on a festival crowd in Barcarès, injuring 3 people. The operator blamed a "battery failure", but investigators could not verify it because *"the flight logs were no longer present on the drone, the pilot's tablet or the cameraman's phone."*
-- Delivery-drone programmes are scaling (Amazon Prime Air, Wing, Zipline). Regulators such as the FAA and NTSB already investigate drone incidents, and depend on operator-supplied data.
+- Autonomous drone use is scaling fast, delivery most visibly (Amazon Prime Air, Wing, Zipline). Regulators such as the FAA and NTSB already investigate drone incidents, and depend on operator-supplied data.
 
 ## 2. Users
 
@@ -32,6 +32,18 @@ Delivery drones already make safety decisions by themselves: whether it is safe 
 | **Drone operator** | Prove its drones behaved; watch flights; keep an auditable record | — (technical user) |
 | **Regulator / auditor / journalist** | Check any flight independently | trusting the operator's server |
 | **Hackathon judge** | Try every integration end to end from a link | installing anything except MetaMask |
+
+## 2a. Scope: any autonomous drone, demonstrated on delivery
+
+| Drone type | Actions the 0G gate approves | Example permit rule |
+|---|---|---|
+| **Delivery** (the demo) | take off, reroute, **drop**, land | no drop with a person in the zone |
+| Agriculture | take off, **spray**, land | no spraying near people or water |
+| Inspection | take off, **approach structure**, land | minimum distance from power lines |
+| Filming / events | take off, **fly over area**, land | never over a crowd |
+| Medical / emergency | take off, reroute, **land at pad** | landing pad must be clear |
+
+The engine (gate, sealed record, CRE judge, Arc escrow) is the same for all of them; only the permit and the gated actions change.
 
 ## 3. Goals and non-goals
 

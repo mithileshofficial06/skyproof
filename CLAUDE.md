@@ -1,6 +1,6 @@
 # SkyProof: guide for Claude Code
 
-SkyProof is a tamper-proof black box for delivery drones: **0G decides and records, Chainlink CRE judges claims, an Arc Studio USDC escrow pays victims.** ETHGlobal Mumbai 2026. Tracks: 0G Physical AI, Arc Advanced Stablecoin Logic, Chainlink CRE.
+SkyProof is a tamper-proof black box for autonomous drones (the demo uses a delivery drone): **0G decides and records, Chainlink CRE judges claims, an Arc Studio USDC escrow pays victims.** ETHGlobal Mumbai 2026. Tracks: 0G Physical AI, Arc Advanced Stablecoin Logic, Chainlink CRE.
 
 Read first: [README.md](README.md) · [docs/TRD.md](docs/TRD.md) · [docs/Architecture.md](docs/Architecture.md) · [docs/Sponsor_Tracks.md](docs/Sponsor_Tracks.md).
 

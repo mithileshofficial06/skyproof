@@ -2,17 +2,68 @@
 // The 3D simulation view. World rebuilt from the signed permit + recorded scene, in daylight.
 // Sim coordinates: metres on a 1:50 city block (x east, y north, alt up) -> three.js (x, alt, -y).
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Edges, Environment, Lightformer, Line, OrbitControls, PerformanceMonitor, Sky, Text as DreiText, useGLTF } from "@react-three/drei";
+import { Edges, Environment, Lightformer, OrbitControls, PerformanceMonitor, Sky, Text as DreiText, useGLTF } from "@react-three/drei";
 import { Bloom, EffectComposer, SMAA, ToneMapping, Vignette } from "@react-three/postprocessing";
 import { ToneMappingMode } from "postprocessing";
-import { type ComponentProps, memo, type MutableRefObject, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { type ComponentProps, memo, type MutableRefObject, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { Line2 } from "three/examples/jsm/lines/Line2.js";
+import { LineGeometry } from "three/examples/jsm/lines/LineGeometry.js";
+import { LineMaterial } from "three/examples/jsm/lines/LineMaterial.js";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { Permit, Person, Prop, XY } from "@/lib/flight";
 
 const v = (x: number, y: number, alt = 0): [number, number, number] => [x, alt, -y];
 const FONT = "/fonts/NotoSans-Regular.ttf"; // bundled: never wait on a CDN
 const Text = (p: ComponentProps<typeof DreiText>) => <DreiText font={FONT} {...p} />;
+
+// Fat line with ONE material for its whole life. drei's <Line> disposes its material whenever the points change,
+// which forces a shader recompile (a 40-80 ms stall) on every trail update and on every render of inline points;
+// that stall showed up as flicker while scrolling past the hero replay. Geometry is rebuilt only when the
+// coordinates really change.
+type LineProps = { points: [number, number, number][]; color?: string; vertexColors?: THREE.Color[]; lineWidth?: number; dashed?: boolean; dashSize?: number; gapSize?: number; transparent?: boolean; opacity?: number };
+function Line({ points, color = "#000000", vertexColors, lineWidth = 1, dashed = false, dashSize = 1, gapSize = 1, transparent = false, opacity = 1 }: LineProps) {
+  const size = useThree((st) => st.size);
+  const [line] = useState(() => new Line2());
+  const [mat] = useState(() => new LineMaterial());
+  const pos = points.flat();
+  const col = vertexColors?.flatMap((c) => c.toArray());
+  const sig = pos.join(",") + "|" + (col ? col.join(",") : "");
+  // rebuilt only when the coordinate signature changes, not on every new array identity
+  const geom = useMemo(() => {
+    const [p, c] = sig.split("|");
+    const g = new LineGeometry();
+    g.setPositions(p.split(",").map(Number));
+    if (c) g.setColors(c.split(",").map(Number));
+    return g;
+  }, [sig]);
+  useLayoutEffect(() => {
+    const old = line.geometry;
+    line.geometry = geom;
+    line.computeLineDistances();
+    if (old !== geom) old.dispose();
+  }, [geom, line]);
+  useLayoutEffect(() => {
+    line.material = mat;
+    mat.color.set(vertexColors ? "#ffffff" : color);
+    mat.vertexColors = !!vertexColors;
+    mat.linewidth = lineWidth;
+    mat.dashed = dashed;
+    mat.dashSize = dashSize;
+    mat.gapSize = gapSize;
+    mat.transparent = transparent || opacity < 1;
+    mat.opacity = opacity;
+    mat.resolution.set(size.width, size.height);
+  }, [line, mat, color, !!vertexColors, lineWidth, dashed, dashSize, gapSize, transparent, opacity, size.width, size.height]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(
+    () => () => {
+      line.geometry.dispose();
+      mat.dispose();
+    },
+    [line, mat],
+  );
+  return <primitive object={line} />;
+}
 
 export type Tone = "ok" | "deny" | "warn" | "breach" | "info";
 const TONE: Record<Tone, string> = { ok: "#0f766e", info: "#334155", deny: "#b91c1c", warn: "#b45309", breach: "#b91c1c" };

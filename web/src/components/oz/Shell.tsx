@@ -2,7 +2,7 @@
 // The ozky shell around every page: initial loader, header + menu, smooth scroll, footer.
 import { usePathname } from "next/navigation";
 import { type ReactNode, useCallback, useEffect, useState } from "react";
-import { getLenis, initScroll, releaseAnimations } from "@/lib/ozScroll";
+import { getLenis, initScroll, releaseAnimations, ScrollTrigger } from "@/lib/ozScroll";
 import { Footer } from "./Footer";
 import { Header } from "./Header";
 import { Loader } from "./Loader";
@@ -25,6 +25,23 @@ export function Shell({ children }: { children: ReactNode }) {
       teardown();
     };
   }, [experience]);
+
+  // scroll-triggered reveals measure positions once; re-measure whenever the page changes or grows
+  // (data loading in, images, 3D canvases), so no section is left waiting for a trigger it already passed
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      clearTimeout(t);
+      t = setTimeout(() => ScrollTrigger.refresh(), 150);
+    };
+    const ro = new ResizeObserver(refresh);
+    ro.observe(document.body);
+    refresh();
+    return () => {
+      clearTimeout(t);
+      ro.disconnect();
+    };
+  }, [path]);
 
   // new page: start at the top (Lenis keeps its own scroll target); hash links are left to the browser
   useEffect(() => {

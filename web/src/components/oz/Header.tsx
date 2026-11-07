@@ -26,12 +26,26 @@ export function Header({ onMenu, forceTone }: { onMenu: () => void; forceTone?: 
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
-    const sync = () => setTone(forceTone ?? toneAt(logoEl.current));
+    // hide the header near the footer, but only after the visitor scrolled: on short pages the footer is
+    // already half on screen at the top, and the menu must stay reachable there
+    let footerOn = false;
+    const sync = () => {
+      setTone(forceTone ?? toneAt(logoEl.current));
+      setHidden(footerOn && window.scrollY > 160);
+    };
     sync();
     window.addEventListener("scroll", sync, { passive: true });
     window.addEventListener("resize", sync);
     const footerEl = document.querySelector("[data-footer]");
-    const io = footerEl ? new IntersectionObserver((e) => setHidden(e[0].isIntersecting), { threshold: 0.5 }) : null;
+    const io = footerEl
+      ? new IntersectionObserver(
+          (e) => {
+            footerOn = e[0].isIntersecting;
+            sync();
+          },
+          { threshold: 0.5 },
+        )
+      : null;
     if (footerEl && io) io.observe(footerEl);
     const t = setInterval(sync, 800); // route changes swap the section under the logo
     return () => {

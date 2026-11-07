@@ -6,7 +6,7 @@
 ---
 
 ## 1. The problem, as a story
-A delivery drone flies over a city. Most of the time it flies itself along a planned route, and an AI helps make the big decisions. A company's pilot watches and can take over.
+SkyProof is for any autonomous drone. In this demo, a delivery drone flies over a city. Most of the time it flies itself along a planned route, and an AI helps make the big decisions. A company's pilot watches and can take over.
 
 One day it crashes and smashes a car window. Everyone argues:
 - The company says: "A strong gust hit it. Not our fault."

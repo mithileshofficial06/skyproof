@@ -43,8 +43,8 @@ export const footer = {
 export const lander = {
   titleTop: "Sky",
   titleBottom: "Proof",
-  subhead: "An independent black box for delivery drones",
-  tagline: "When a drone hurts someone, the only record belongs to the operator. SkyProof changes who holds the truth.",
+  subhead: "An independent black box for autonomous drones",
+  tagline: "When an autonomous drone hurts someone, the only record belongs to the operator. SkyProof changes who holds the truth. Shown here on a delivery drone.",
   status: [
     "0G vision model · TEE",
     "Sealed channel · TDX",

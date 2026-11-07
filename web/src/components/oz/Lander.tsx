@@ -40,7 +40,7 @@ export function Lander({ band }: { band: ReactNode }) {
     <section ref={section} data-nav className="relative grid w-full grid-cols-2 lg:flex lg:items-start">
       {/* LEFT 3/4: title · band · features */}
       <div className="contents lg:flex lg:w-3/4 lg:flex-col">
-        <div data-load className="order-1 col-span-2 flex h-[75dvh] flex-col justify-center bg-gold px-5 pt-24 text-ink sm:px-8 lg:order-none">
+        <div data-load className="order-1 col-span-2 flex h-[75svh] flex-col justify-center bg-gold px-5 pt-24 text-ink sm:px-8 lg:order-none">
           <p className="mb-4 max-w-[34ch] font-display text-[clamp(0.95rem,3.4vw,1.4rem)] font-medium leading-tight lg:hidden">{lander.subhead}</p>
           <div className="flex flex-wrap items-start gap-x-12 gap-y-4">
             <h1 className={big}>
@@ -56,7 +56,7 @@ export function Lander({ band }: { band: ReactNode }) {
             </span>
           </h1>
         </div>
-        <div data-load data-nav="light" className="order-2 col-span-2 h-[40dvh] w-full overflow-hidden bg-ink lg:order-none lg:h-[80dvh]">
+        <div data-load data-nav="light" className="order-2 col-span-2 h-[40svh] w-full overflow-hidden bg-ink lg:order-none lg:h-[80svh]">
           {band}
         </div>
         <div className="order-6 col-span-2 grid grid-cols-1 lg:order-none lg:grid-cols-3">
@@ -73,11 +73,11 @@ export function Lander({ band }: { band: ReactNode }) {
 
       {/* RIGHT 1/4: tagline · system status · explore (bottom-pins on desktop) */}
       <aside ref={rightCol} className="contents lg:sticky lg:flex lg:w-1/4 lg:flex-col lg:self-start" style={{ top: stickyTop }}>
-        <div data-load className="order-4 col-span-1 flex aspect-square flex-col justify-between bg-grey px-5 pb-6 pt-6 text-ink lg:order-none lg:aspect-auto lg:h-[50dvh] lg:px-7 lg:pb-8 lg:pt-24">
+        <div data-load className="order-4 col-span-1 flex aspect-square flex-col justify-between bg-grey px-5 pb-6 pt-6 text-ink lg:order-none lg:aspect-auto lg:h-[50svh] lg:px-7 lg:pb-8 lg:pt-24">
           <p className="font-display text-[clamp(0.85rem,3.4vw,1.05rem)] font-medium leading-snug lg:text-[clamp(1.05rem,1.4vw,1.35rem)]">{lander.tagline}</p>
           <span className="self-center font-display text-[clamp(1.6rem,3vw,2.8rem)] font-semibold tracking-[-0.05em]">SkyProof</span>
         </div>
-        <div data-load data-nav="light" className="order-3 col-span-2 flex h-[55dvh] flex-col bg-ink px-7 py-7 text-grey lg:order-none lg:h-[65dvh]">
+        <div data-load data-nav="light" className="order-3 col-span-2 flex h-[55svh] flex-col bg-ink px-7 py-7 text-grey lg:order-none lg:h-[65svh]">
           <h3 className="font-display text-xl font-medium">System status</h3>
           <ol className="mono mt-4 space-y-[3px] text-[9px] text-grey">
             {lander.status.map((s, i) => (
