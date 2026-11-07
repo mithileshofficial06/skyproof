@@ -52,7 +52,16 @@ export async function storageUpload(bytes: Uint8Array, signer: ethers.Wallet): P
   const data = new MemData(bytes);
   const [, treeErr] = await data.merkleTree();
   if (treeErr !== null) throw new Error(`merkle tree: ${treeErr}`);
-  const [tx, err] = await indexer.upload(data, env.zgRpc, signer as any); // SDK types reference the CJS ethers build
+  // The SDK waits for its chosen storage node with no time limit; a lagging testnet node would freeze the
+  // serial seal queue (and every later flight). Give each try a deadline so retry() re-picks nodes instead.
+  const UPLOAD_TIMEOUT_MS = Number(process.env.ZG_UPLOAD_TIMEOUT_MS || 60_000);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const [tx, err] = await Promise.race([
+    indexer.upload(data, env.zgRpc, signer as any), // SDK types reference the CJS ethers build
+    new Promise<never>((_, rej) => {
+      timer = setTimeout(() => rej(new Error(`0G Storage upload timed out after ${UPLOAD_TIMEOUT_MS / 1000} s (storage node not synced)`)), UPLOAD_TIMEOUT_MS);
+    }),
+  ]).finally(() => clearTimeout(timer));
   if (err !== null) throw new Error(`0G Storage upload: ${err}`);
   if (!("rootHash" in tx)) throw new Error("unexpected fragmented upload");
   return { rootHash: tx.rootHash, txHash: tx.txHash };

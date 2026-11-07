@@ -103,7 +103,7 @@ Live scenarios: normal delivery · person in the drop zone · 0G link lost (safe
 - **Safety gate** (`sim/skyproof_sim/gate.py`): an action needs a 0G ALLOW that is **fresh (≤ 10 s), for this exact request, used once**. If 0G does not answer, the drone does a pre-approved safe stop and records "no 0G decision claimed". It never invents an approval.
 - **Storage:** encrypted segments uploaded during the flight with the official TS SDK. Replays are rebuilt from 0G alone (`pnpm replay <flight>`). Code: `officer/src/sealer.ts`, `officer/src/crypto.ts`.
 - **Chain** (Galileo 16602): `DroneRegistry` (airframe, permit, approved model) and `FlightLog` (`openFlight` → `anchor` per segment → `closeFlight`).
-- **So far:** 47 flights published, 1,529 sealed records, 360 decisions by 0G.
+- **So far:** 48 flights published, 1,562 sealed records, 368 decisions by 0G.
 
 ### Chainlink CRE
 Workflow `cre/judge/verdict/workflow.ts`, rules in `rules.ts`. Triggered by `ClaimWindowClosed` on Arc. It finds the flight (falling back to 0G Chain if the evidence host lies), then verifies the hash chain, signatures, every anchor and the `CLOSE` record before applying the rules. Only the compact result goes through consensus (`consensusIdenticalAggregation`).
@@ -146,6 +146,7 @@ Workflow `cre/judge/verdict/workflow.ts`, rules in `rules.ts`. Triggered by `Cla
 | #8 | honest, auto-runner | REVIEW | [0xbb608b5e…](https://testnet.arcscan.app/tx/0xbb608b5ecaaca43fa562ade29b069d06eef680b6e3a1298ddefb4917ce78dc26) |
 | #10 | cheating operator, started from the public site | BREACH → paid | [0x0f081515…](https://testnet.arcscan.app/tx/0x0f081515ef0436305d01c6697e09f19d94049fae75017187991ec48c7546f256) |
 | #11 | cheating operator, auto-runner | BREACH → paid | [0x9cdaa4d5…](https://testnet.arcscan.app/tx/0x9cdaa4d550769714e600eada01874be4b994b228402af7afb548bb61b7f3d0f6) |
+| #12 | honest flight started from the public site, auto-runner (final run) | REVIEW → held | [0x19f272d2…](https://testnet.arcscan.app/tx/0x19f272d2591bca51c7a5d031cbdddaa4ecb1a8e0fef624d46deb15af49d69f7d) |
 
 More: [`docs/Deployments.md`](docs/Deployments.md) · proof pack [`proofs/README.md`](proofs/README.md) · [`docs/0G_Proof_Sheet.md`](docs/0G_Proof_Sheet.md)
 
